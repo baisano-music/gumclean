@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gumclean-dev",
+      "runtimeExecutable": "/Users/Gebruiker/gumclean/node_modules/.bin/next",
+      "runtimeArgs": ["dev"],
+      "port": 3000,
+      "autoPort": true,
+      "env": {
+        "PATH": "/Users/Gebruiker/.nvm/versions/node/v24.14.1/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    }
+  ]
+}

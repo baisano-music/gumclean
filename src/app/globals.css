@@ -1,26 +1,138 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Bubblegum color system */
+  --color-pink: #FF3D9A;
+  --color-pink-light: #FF6FB5;
+  --color-pink-dark: #D4267A;
+  --color-purple: #7B2FFF;
+  --color-purple-light: #9B5FFF;
+  --color-purple-dark: #5A10E0;
+  --color-teal: #00E5C3;
+  --color-teal-light: #33FFE0;
+  --color-teal-dark: #00B89D;
+  --color-yellow: #FFE03D;
+  --color-yellow-light: #FFF07A;
+  --color-surface: #FFF5FB;
+  --color-dark: #1A0A2E;
+  --color-dark-light: #2D1650;
+  --color-muted: #8B6F8E;
+
+  /* Legacy brand mapping */
+  --color-brand-50: #FFF5FB;
+  --color-brand-100: #FFE0F0;
+  --color-brand-600: #FF3D9A;
+  --color-brand-700: #D4267A;
+  --color-brand-800: #A01058;
+
+  /* Fonts */
+  --font-display: var(--font-fredoka);
+  --font-sans: var(--font-dm-sans);
+
+  /* Animations */
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-slow: float 8s ease-in-out infinite;
+  --animate-blob: blob 7s ease-in-out infinite;
+  --animate-wobble: wobble 0.5s ease-in-out;
+  --animate-bounce-in: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-gradient: gradientShift 8s ease infinite;
+  --animate-count-up: countUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  color: #1A0A2E;
+  background: #FFF5FB;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(20px, -30px) scale(1.05); }
+  50% { transform: translate(-10px, 15px) scale(0.95); }
+  75% { transform: translate(15px, 10px) scale(1.02); }
+}
+
+@keyframes wobble {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg) scale(1.05); }
+  50% { transform: rotate(2deg) scale(1.08); }
+  75% { transform: rotate(-1deg) scale(1.05); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes bounceIn {
+  0% { opacity: 0; transform: translateY(30px) scale(0.9); }
+  60% { opacity: 1; transform: translateY(-10px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes countUp {
+  0% { opacity: 0; transform: translateY(20px) scale(0.8); }
+  70% { transform: translateY(-5px) scale(1.05); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Wave SVG divider utility */
+.wave-divider {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  line-height: 0;
+}
+
+.wave-divider svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Bubblegum card shadows */
+.shadow-pink { box-shadow: 6px 6px 0px #FF3D9A; }
+.shadow-purple { box-shadow: 6px 6px 0px #7B2FFF; }
+.shadow-teal { box-shadow: 6px 6px 0px #00E5C3; }
+.shadow-yellow { box-shadow: 6px 6px 0px #FFE03D; }
+
+/* Gradient mesh hero */
+.gradient-mesh {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 61, 154, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(123, 47, 255, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(0, 229, 195, 0.3) 0%, transparent 50%),
+    linear-gradient(135deg, #1A0A2E 0%, #2D1650 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+}
+
+/* Frosted glass */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Pill utility */
+.pill {
+  border-radius: 9999px;
 }
