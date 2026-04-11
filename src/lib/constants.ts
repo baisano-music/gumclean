@@ -14,6 +14,8 @@ export const NAV_ITEMS = [
   { label: "Diensten", href: "#diensten" },
   { label: "Waarom wij", href: "#waarom" },
   { label: "Doelgroepen", href: "#doelgroepen" },
+  { label: "Klanten", href: "#klanten" },
+  { label: "Duurzaamheid", href: "#duurzaamheid" },
   { label: "Contact", href: "#offerte" },
 ] as const;
 
