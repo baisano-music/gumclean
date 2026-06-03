@@ -10,7 +10,7 @@ export default function Contract() {
             Eén contract. Altijd schoon.
           </h2>
           <p className="mt-6 max-w-2xl mx-auto text-muted text-lg leading-relaxed">
-            Geen verrassingen, geen facturen die uit het niets komen — gewoon
+            Geen verrassingen, geen facturen die uit het niets komen, gewoon
             een vaste prijs voor een structureel schoon centrum of terrein.
           </p>
         </div>
@@ -45,7 +45,7 @@ export default function Contract() {
             </a>
           </div>
 
-          {/* Kaart B — highlighted */}
+          {/* Kaart B, highlighted */}
           <div className="bg-[#2d6a4f] rounded-[2rem] p-8 sm:p-10 shadow-2xl flex flex-col relative md:-translate-y-4">
             <span className="inline-block self-start px-3 py-1 bg-white text-[#2d6a4f] text-xs font-bold rounded-full mb-4 uppercase tracking-wide">
 Aanbevolen

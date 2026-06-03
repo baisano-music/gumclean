@@ -16,7 +16,7 @@ export default function VoorNa() {
             Van zo 🔴 naar zo ✨
           </h2>
           <p className="text-white/60 text-lg max-w-xl mx-auto">
-            Resultaat na één behandeling — zonder schade aan de ondergrond.
+            Resultaat na één behandeling, zonder schade aan de ondergrond.
           </p>
         </div>
 

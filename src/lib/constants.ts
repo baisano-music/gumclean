@@ -1,9 +1,9 @@
 export const COMPANY = {
   name: "GumClean",
-  tagline: "De kauwgumspecialist van Haarlemmermeer",
+  tagline: "Buitenreiniging voor retail, vastgoed en gemeenten in Haarlemmermeer en omgeving.",
   location: "Hoofddorp",
   region: "Haarlemmermeer",
-  phone: "+31 (0)23 000 0000",
+  phone: "",
   email: "info@gumclean.nl",
   website: "gumclean.nl",
   kvk: "00000000",
@@ -12,33 +12,35 @@ export const COMPANY = {
 
 export const NAV_ITEMS = [
   { label: "Diensten", href: "#diensten" },
-  { label: "Waarom wij", href: "#waarom" },
+  { label: "Zonnepanelen", href: "#zonnepanelen" },
   { label: "Doelgroepen", href: "#doelgroepen" },
-  { label: "Klanten", href: "#klanten" },
-  { label: "Duurzaamheid", href: "#duurzaamheid" },
-  { label: "Contact", href: "#offerte" },
+  { label: "Werkwijze", href: "#waarom" },
+  { label: "Offerte", href: "#offerte" },
 ] as const;
 
 export const SERVICES = [
   {
-    title: "Eenmalige Reiniging",
+    title: "Winkelpuien & gevels",
     description:
-      "Professionele kauwgumverwijdering op elke ondergrond. Stoomreiniging bij 150\u00B0C zonder schade aan tegels, beton of bestrating.",
-    emoji: "\uD83E\uDDF9",
+      "Vieze puien kosten klanten, letterlijk. Wij reinigen winkelpuien, luifels, gevels en buitengevels van winkelketens en kantoorpanden professioneel en zonder schade.",
+    labels: ["Retailketens", "Vastgoedbeheerders", "Gemeenten"],
+    badge: null,
     color: "pink" as const,
   },
   {
-    title: "Periodiek Onderhoud",
+    title: "Zonnepanelen",
     description:
-      "Vaste onderhoudsfrequentie op maat. Maandelijks, per kwartaal of op afroep \u2014 inclusief rapportage.",
-    emoji: "\uD83D\uDD04",
+      "Vuile zonnepanelen leveren tot 25% minder energie. Wij reinigen zonnepanelen op daken van winkels en bedrijfspanden met gedemineraliseerd water, geen schade, geen kalkranden, maximaal rendement.",
+    labels: ["Retailpanden", "Bedrijfsdaken", "Woningcorporaties"],
+    badge: "Specialisme",
     color: "purple" as const,
   },
   {
-    title: "Entr\u00E9e Management",
+    title: "Kauwgumverwijdering",
     description:
-      "Vaste prijs per maand voor altijd een schone entree. Ideaal voor winkels, kantoren en zorginstellingen.",
-    emoji: "\uD83C\uDFE2",
+      "Kauwgum verdwijnt nooit vanzelf. Wij verwijderen het professioneel met stoom op 150°C, geen chemicaliën, geen schade aan bestrating. Inclusief voor/na documentatie.",
+    labels: ["Centrumgebieden", "Winkelcentra", "Gemeenten"],
+    badge: null,
     color: "teal" as const,
   },
 ] as const;
@@ -47,59 +49,62 @@ export const USPS = [
   {
     title: "Lokaal in Hoofddorp",
     description: "Wij kennen de regio. Korte lijnen, snelle respons, geen gedoe.",
-    emoji: "\uD83D\uDCCD",
+    emoji: "📍",
     color: "pink" as const,
   },
   {
-    title: "Schiphol-referentie",
-    description: "Ervaring op \u00E9\u00E9n van de drukste locaties van Nederland.",
-    emoji: "\u2708\uFE0F",
+    title: "Alles in één hand",
+    description: "Winkelpuien, gevels, zonnepanelen én kauwgom. U regelt uw buitenreiniging via één vast aanspreekpunt.",
+    emoji: "🤝",
     color: "yellow" as const,
   },
   {
     title: "Milieuvriendelijk",
     description: "Biologisch afbreekbare middelen, minimaal waterverbruik.",
-    emoji: "\uD83C\uDF3F",
+    emoji: "🌿",
     color: "teal" as const,
   },
   {
     title: "Binnen 48 uur ter plaatse",
-    description: "U belt, wij komen. Geen wachttijden, geen excuses.",
-    emoji: "\u26A1",
+    description: "U vraagt, wij komen. Geen wachttijden, geen excuses.",
+    emoji: "⚡",
     color: "purple" as const,
   },
 ] as const;
 
 export const TARGET_AUDIENCES = [
   {
-    title: "Winkelcentra & Retail",
-    description: "Schone winkelstraten verhogen bezoekersaantallen.",
-    emoji: "\uD83D\uDECD\uFE0F",
+    title: "Retailketens",
+    description:
+      "Van 1 filiaal tot landelijk raamcontract. Wij kennen de planning en werkwijze van grote retailers. Vroeg in de ochtend, geen hinder voor klanten.",
+    emoji: "🛒",
     image: "/winkelcentrum.png",
   },
   {
-    title: "Gemeenten",
-    description: "Voldoe aan reinigingsnormen zonder eigen personeel in te zetten.",
-    emoji: "\uD83C\uDFDB\uFE0F",
+    title: "Winkelcentra & vastgoedbeheerders",
+    description:
+      "Periodieke reiniging van buitengebieden, passages en gevels. Inclusief kwartaalrapportage voor uw portefeuille.",
+    emoji: "🏬",
+    image: "/entree.png",
+  },
+  {
+    title: "Gemeenten & BIZ-fondsen",
+    description:
+      "Schone openbare ruimte is geen luxe maar een basisvereiste. Wij werken samen met gemeenten en ondernemersfondsen aan structurele aanpakken.",
+    emoji: "🏛️",
     image: "/gemeente.png",
   },
   {
-    title: "Scholen & Sportlocaties",
-    description: "Veilige en schone buitenruimtes voor leerlingen.",
-    emoji: "\uD83C\uDFEB",
-    image: "/school.png",
-  },
-  {
     title: "Bedrijventerreinen",
-    description: "Professionele uitstraling van uw terrein en entree.",
-    emoji: "\uD83C\uDFE2",
+    description:
+      "Regelmatige buitenreiniging van bedrijfspanden en terreinen. Collectieve contracten mogelijk via parkmanagement.",
+    emoji: "🏢",
     image: "/bedrijventerrein.png",
   },
 ] as const;
 
 export const STATS = [
-  { value: "5.000+", label: "m\u00B2 gereinigd", emoji: "\uD83E\uDEB7" },
-  { value: "1", label: "Schiphol-referentie", emoji: "\u2708\uFE0F" },
-  { value: "100%", label: "Milieuvriendelijk", emoji: "\uD83C\uDF3F" },
-  { value: "Hoofddorp", label: "Lokaal gevestigd", emoji: "\uD83D\uDCCD" },
+  { value: "5.000+", label: "m² gereinigd", emoji: "🪣" },
+  { value: "100%", label: "Milieuvriendelijk", emoji: "🌿" },
+  { value: "Hoofddorp", label: "Lokaal gevestigd", emoji: "📍" },
 ] as const;

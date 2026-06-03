@@ -15,21 +15,22 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "GumClean | Kauwgum verwijderen in Haarlemmermeer & Hoofddorp",
+  title: "GumClean | Buitenreiniging in Haarlemmermeer & Hoofddorp",
   description:
-    "Professionele kauwgumverwijdering voor gemeenten, winkelcentra en bedrijven in de regio Haarlemmermeer. Vraag direct een gratis offerte aan.",
+    "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen en kauwgumverwijdering in de regio Haarlemmermeer. Vraag direct een offerte aan.",
   keywords: [
-    "kauwgum verwijderen Hoofddorp",
+    "buitenreiniging Haarlemmermeer",
+    "gevelreiniging Hoofddorp",
+    "zonnepanelen reinigen",
+    "winkelpui reinigen",
     "kauwgum verwijderen Haarlemmermeer",
-    "kauwgumverwijdering bedrijf",
-    "kauwgom verwijderen",
     "professionele reiniging",
     "GumClean",
   ],
   openGraph: {
-    title: "GumClean | Kauwgum verwijderen in Haarlemmermeer & Hoofddorp",
+    title: "GumClean | Buitenreiniging in Haarlemmermeer & Hoofddorp",
     description:
-      "Professionele kauwgumverwijdering voor gemeenten, winkelcentra en bedrijven in de regio Haarlemmermeer.",
+      "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen en kauwgumverwijdering in de regio Haarlemmermeer.",
     url: "https://gumclean.nl",
     siteName: "GumClean",
     locale: "nl_NL",
@@ -49,9 +50,8 @@ const jsonLd = {
   "@type": "LocalBusiness",
   name: "GumClean",
   description:
-    "Professionele kauwgumverwijdering in Hoofddorp en Haarlemmermeer",
+    "Professionele buitenreiniging voor winkelpuien & gevels, zonnepanelen en kauwgumverwijdering in Hoofddorp en Haarlemmermeer",
   url: "https://gumclean.nl",
-  telephone: "+31 (0)23 000 0000",
   email: "info@gumclean.nl",
   address: {
     "@type": "PostalAddress",
@@ -63,7 +63,7 @@ const jsonLd = {
     "@type": "Place",
     name: "Haarlemmermeer",
   },
-  serviceType: "Kauwgumverwijdering",
+  serviceType: ["Gevelreiniging", "Zonnepanelen reinigen", "Kauwgumverwijdering"],
 };
 
 export default function RootLayout({

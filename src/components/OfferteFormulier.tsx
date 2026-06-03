@@ -125,6 +125,33 @@ export default function OfferteFormulier() {
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-semibold text-dark mb-2">Waar heeft u behoefte aan?</label>
+                <select
+                  name="dienst"
+                  className="w-full px-5 py-3 bg-surface border-2 border-pink/20 rounded-xl text-dark focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/20 transition-colors"
+                >
+                  <option value="">Selecteer...</option>
+                  <option value="Kauwgumverwijdering">Kauwgumverwijdering</option>
+                  <option value="Winkelpui / gevelreiniging">Winkelpui / gevelreiniging</option>
+                  <option value="Zonnepanelen reiniging">Zonnepanelen reiniging</option>
+                  <option value="Combinatie / meerdere diensten">Combinatie / meerdere diensten</option>
+                  <option value="Weet ik nog niet">Weet ik nog niet</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-dark mb-2">Aantal locaties (optioneel)</label>
+                <input
+                  name="locaties"
+                  type="number"
+                  min={1}
+                  className="w-full px-5 py-3 bg-surface border-2 border-pink/20 rounded-xl text-dark placeholder-muted focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/20 transition-colors"
+                  placeholder="bijv. 1 of 21"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-semibold text-dark mb-2">Geschatte oppervlakte</label>
               <select

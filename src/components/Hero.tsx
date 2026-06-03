@@ -13,27 +13,17 @@ export default function Hero() {
       <div className="absolute bottom-20 left-10 w-80 h-80 bg-purple/20 rounded-full blur-3xl animate-blob" style={{ animationDelay: "2s" }} />
       <div className="absolute top-1/2 right-1/3 w-48 h-48 bg-teal/20 rounded-full blur-3xl animate-blob" style={{ animationDelay: "4s" }} />
 
-      {/* Large bubblegum bubble - decorative */}
-      <div className="absolute right-0 top-1/4 w-[300px] h-[300px] md:w-[500px] md:h-[500px] opacity-10">
-        <svg viewBox="0 0 500 500" className="w-full h-full animate-float">
-          <circle cx="250" cy="250" r="220" fill="#FF3D9A" />
-          <ellipse cx="200" cy="200" rx="60" ry="40" fill="rgba(255,255,255,0.3)" transform="rotate(-30 200 200)" />
-        </svg>
-      </div>
-
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
         <div className="max-w-4xl">
           <h1 className="font-[family-name:var(--font-fredoka)] text-5xl sm:text-7xl lg:text-8xl font-bold text-white leading-[1.1] mb-6 animate-bounce-in">
-            Kauwgum op straat?{" "}
-            <span className="inline-block">🥊</span>
-            <br />
+            Altijd een{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink via-yellow to-teal">
-              Wij blazen het weg.
+              schone buitenkant.
             </span>
           </h1>
 
           <p className="text-lg sm:text-xl text-white/80 max-w-2xl mb-10 leading-relaxed font-[family-name:var(--font-dm-sans)]">
-            Professionele kauwgumverwijdering voor winkelcentra, gemeenten en bedrijventerreinen in de regio Haarlemmermeer.
+            GumClean reinigt winkelpuien, zonnepanelen en openbare ruimtes professioneel en milieuvriendelijk. Actief in gemeente Haarlemmermeer en omgeving.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-16">
@@ -41,7 +31,7 @@ export default function Hero() {
               href="#offerte"
               className="inline-flex items-center justify-center px-8 py-4 bg-yellow text-dark text-lg font-bold rounded-full hover:bg-yellow-light shadow-lg shadow-yellow/30 transition-all hover:scale-105"
             >
-              Vraag gratis offerte aan →
+              Vraag een offerte aan →
             </a>
             <a
               href="#diensten"

@@ -4,7 +4,7 @@ import Diensten from "@/components/Diensten";
 import WaaromGumClean from "@/components/WaaromGumClean";
 import VoorNa from "@/components/VoorNa";
 import Doelgroepen from "@/components/Doelgroepen";
-import Klanten from "@/components/Klanten";
+import Zonnepanelen from "@/components/Zonnepanelen";
 import Duurzaamheid from "@/components/Duurzaamheid";
 import Contract from "@/components/Contract";
 import DemoCTA from "@/components/DemoCTA";
@@ -21,7 +21,7 @@ export default function Home() {
         <WaaromGumClean />
         <VoorNa />
         <Doelgroepen />
-        <Klanten />
+        <Zonnepanelen />
         <Duurzaamheid />
         <Contract />
         <DemoCTA />

@@ -1,5 +1,5 @@
 import { USPS } from "@/lib/constants";
-import { DoodlePin, DoodlePlane, DoodleLeaf, DoodleBolt } from "./DoodleIcons";
+import { DoodlePin, DoodleBuilding, DoodleLeaf, DoodleBolt } from "./DoodleIcons";
 
 const colorMap = {
   pink: {
@@ -28,7 +28,7 @@ const colorMap = {
   },
 } as const;
 
-const icons = [DoodlePin, DoodlePlane, DoodleLeaf, DoodleBolt];
+const icons = [DoodlePin, DoodleBuilding, DoodleLeaf, DoodleBolt];
 
 export default function WaaromGumClean() {
   return (

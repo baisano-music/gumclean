@@ -15,23 +15,17 @@ export default function DemoCTA() {
               Zien is geloven.
             </h2>
             <p className="text-white/90 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto mb-10">
-              Wij komen gratis langs voor een demonstratie op uw locatie —
+              Wij komen gratis langs voor een demonstratie op uw locatie,
               50 m², 20 minuten, geen verplichtingen. U ziet het resultaat
               met eigen ogen voordat u iets beslist.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex justify-center items-center">
               <a
                 href="#offerte"
                 className="inline-flex items-center justify-center px-8 py-4 bg-white text-[#2d6a4f] text-base font-bold rounded-full hover:bg-gray-100 shadow-lg transition-all hover:scale-105 w-full sm:w-auto"
               >
                 Plan een gratis demo →
-              </a>
-              <a
-                href="tel:+31230000000"
-                className="inline-flex items-center justify-center px-8 py-4 bg-transparent text-white text-base font-bold rounded-full border-2 border-white hover:bg-white hover:text-[#2d6a4f] transition-all w-full sm:w-auto"
-              >
-                Bel ons direct
               </a>
             </div>
 

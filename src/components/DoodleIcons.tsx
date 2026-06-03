@@ -71,6 +71,28 @@ export function DoodleBuilding({ className = "w-12 h-12" }: { className?: string
   );
 }
 
+export function DoodleSun({ className = "w-12 h-12" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* sun core */}
+      <circle cx="40" cy="40" r="15" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      {/* little shine */}
+      <ellipse cx="34" cy="34" rx="5" ry="3" stroke="currentColor" strokeWidth="1.5" transform="rotate(-25 34 34)" opacity="0.5" />
+      {/* rays */}
+      <path d="M40 8 L40 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M40 62 L40 72" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M8 40 L18 40" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M62 40 L72 40" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M17 17 L24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M56 56 L63 63" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M63 17 L56 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M24 56 L17 63" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      {/* sparkle */}
+      <circle cx="68" cy="64" r="1.5" fill="currentColor" opacity="0.3" />
+    </svg>
+  );
+}
+
 export function DoodlePin({ className = "w-12 h-12" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">

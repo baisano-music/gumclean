@@ -1,15 +1,15 @@
 const STEPS = [
   {
     title: "Voorkomen",
-    text: "GumBuddy containers op strategische plekken zorgen dat kauwgom in de bak belandt, niet op straat.",
+    text: "Goede afvalvoorzieningen en bewustwording op drukke plekken houden kauwgom in de bak, niet op straat.",
   },
   {
     title: "Verwijderen",
-    text: "Wat toch op straat belandt, verwijdert GumClean professioneel met stoom op 150°C — geen chemicaliën, geen schade.",
+    text: "Wat toch op straat belandt, verwijdert GumClean professioneel met stoom op 150°C, geen chemicaliën, geen schade.",
   },
   {
     title: "Recyclen",
-    text: "Via Gumdrop wordt ingezamelde kauwgom omgezet in nieuwe producten zoals zolen en kammen. Volledig circulair.",
+    text: "Onze ambitie: ingezamelde kauwgom hergebruiken in nieuwe producten. Hier werken we naartoe richting een volledig circulaire aanpak.",
   },
 ];
 
@@ -25,12 +25,12 @@ export default function Duurzaamheid() {
             Circulair
           </span>
           <h2 className="font-[family-name:var(--font-fredoka)] text-4xl sm:text-5xl lg:text-6xl font-bold text-dark">
-            Schoon én groen — van vuil naar nieuw
+            Schoon én groen, van vuil naar nieuw
           </h2>
           <p className="mt-6 max-w-3xl mx-auto text-muted text-lg leading-relaxed">
             Kauwgum bevat plastic en blijft 20 tot 100 jaar op straat liggen.
-            GumClean verwijdert het milieuvriendelijk — en werkt samen met
-            partners om ingezamelde kauwgom te recyclen tot nieuwe producten.
+            GumClean verwijdert het milieuvriendelijk en onderzoekt
+            mogelijkheden om ingezamelde kauwgom te hergebruiken in nieuwe producten.
           </p>
         </div>
 
