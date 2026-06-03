@@ -8,6 +8,7 @@ import Zonnepanelen from "@/components/Zonnepanelen";
 import Duurzaamheid from "@/components/Duurzaamheid";
 import Contract from "@/components/Contract";
 import DemoCTA from "@/components/DemoCTA";
+import FAQ from "@/components/FAQ";
 import OfferteFormulier from "@/components/OfferteFormulier";
 import Footer from "@/components/Footer";
 
@@ -25,6 +26,7 @@ export default function Home() {
         <Duurzaamheid />
         <Contract />
         <DemoCTA />
+        <FAQ />
         <OfferteFormulier />
       </main>
       <Footer />

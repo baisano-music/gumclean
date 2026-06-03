@@ -100,3 +100,48 @@ export const STATS = [
   { value: "100%", label: "Milieuvriendelijk" },
   { value: "Hoofddorp", label: "Lokaal gevestigd" },
 ] as const;
+
+// Gebruikt door zowel de zichtbare FAQ-sectie als de FAQPage structured data.
+// Houd vraag/antwoord identiek zodat schema en pagina overeenkomen.
+export const FAQ_ITEMS = [
+  {
+    question: "In welke regio werkt GumClean?",
+    answer:
+      "GumClean is gevestigd in Hoofddorp en werkt in de hele regio Haarlemmermeer en omgeving, waaronder Nieuw-Vennep, Badhoevedorp en de rest van Noord-Holland.",
+  },
+  {
+    question: "Welke diensten biedt GumClean aan?",
+    answer:
+      "GumClean biedt drie kerndiensten: het reinigen van winkelpuien en gevels, het reinigen van zonnepanelen, en het milieuvriendelijk verwijderen van kauwgum van bestrating, gevels en entrees.",
+  },
+  {
+    question: "Hoe snel kan GumClean ter plaatse zijn?",
+    answer:
+      "Omdat GumClean lokaal in Hoofddorp zit, zijn wij doorgaans binnen 48 uur ter plaatse. Een vrijblijvende offerte ontvangt u binnen 24 uur.",
+  },
+  {
+    question: "Werkt GumClean milieuvriendelijk?",
+    answer:
+      "Ja. GumClean werkt milieuvriendelijk en zet in op voorkomen, verwijderen en recyclen, zodat reiniging zo min mogelijk belastend is voor de omgeving.",
+  },
+  {
+    question: "Voor welke organisaties werkt GumClean?",
+    answer:
+      "GumClean werkt voor retailketens, winkelcentra en vastgoedbeheerders, gemeenten en BIZ-fondsen, en beheerders van bedrijventerreinen.",
+  },
+  {
+    question: "Hoe vaak moeten zonnepanelen gereinigd worden?",
+    answer:
+      "Vervuilde zonnepanelen leveren minder op. Een periodieke reiniging — vaak één tot twee keer per jaar — herstelt het rendementsverlies. Met de rekentool op de site berekent u uw verlies.",
+  },
+  {
+    question: "Biedt GumClean onderhoudscontracten aan?",
+    answer:
+      "Ja. U kunt kiezen voor een eenmalige basisreiniging of een kwartaalonderhoudscontract, zodat uw pand of locatie het hele jaar door schoon blijft.",
+  },
+  {
+    question: "Hoe vraag ik een offerte aan?",
+    answer:
+      "Vraag een vrijblijvende offerte aan via het offerteformulier of mail naar info@gumclean.nl. U ontvangt binnen 24 uur een reactie.",
+  },
+] as const;

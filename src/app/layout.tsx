@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fredoka, DM_Sans } from "next/font/google";
+import { siteJsonLd, faqJsonLd } from "@/lib/structuredData";
 import "./globals.css";
 
 const fredoka = Fredoka({
@@ -15,6 +16,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://gumclean.nl"),
   title: "GumClean | Buitenreiniging in Haarlemmermeer & Hoofddorp",
   description:
     "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen en kauwgumverwijdering in de regio Haarlemmermeer. Vraag direct een offerte aan.",
@@ -35,6 +37,19 @@ export const metadata: Metadata = {
     siteName: "GumClean",
     locale: "nl_NL",
     type: "website",
+    images: [
+      {
+        url: "/hero-bg.png",
+        alt: "GumClean — buitenreiniging in Haarlemmermeer",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GumClean | Buitenreiniging in Haarlemmermeer & Hoofddorp",
+    description:
+      "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen en kauwgumverwijdering in de regio Haarlemmermeer.",
+    images: ["/hero-bg.png"],
   },
   alternates: {
     canonical: "https://gumclean.nl",
@@ -43,27 +58,6 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-};
-
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  name: "GumClean",
-  description:
-    "Professionele buitenreiniging voor winkelpuien & gevels, zonnepanelen en kauwgumverwijdering in Hoofddorp en Haarlemmermeer",
-  url: "https://gumclean.nl",
-  email: "info@gumclean.nl",
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "Hoofddorp",
-    addressRegion: "Noord-Holland",
-    addressCountry: "NL",
-  },
-  areaServed: {
-    "@type": "Place",
-    name: "Haarlemmermeer",
-  },
-  serviceType: ["Gevelreiniging", "Zonnepanelen reinigen", "Kauwgumverwijdering"],
 };
 
 export default function RootLayout({
@@ -76,7 +70,11 @@ export default function RootLayout({
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
       </head>
       <body className="min-h-screen flex flex-col">{children}</body>

@@ -1,0 +1,295 @@
+<!-- ════════════════════════════════════════════════════════════════════════
+     GumClean — GEO / SGEO optimalisatie
+     Plak-klare snippets voor gumclean.nl
+     Gegenereerd op 2026-06-03
+
+     Waarom: AI-zoekmachines (ChatGPT, Google AI Overviews, Perplexity, Gemini)
+     citeren bij voorkeur pagina's met (1) rijke, kloppende structured data en
+     (2) expliciete vraag-en-antwoord content. De homepage had wel een basis
+     LocalBusiness-schema, maar miste FAQ-markup, telefoon/adres/openingstijden,
+     logo, social profielen en Service-markup.
+
+     STATUS: ingevuld voor publicatie (2026-06-03).
+        • telefoon          → weggelaten (nog geen vast nummer; liever leeg dan onwaar)
+        • straat + postcode → weggelaten; alleen plaats, regio en land vermeld
+        • coördinaten       → 52.3030 / 4.6889 (centrum Hoofddorp)
+        • social profielen  → weggelaten (nog geen LinkedIn/Instagram/Facebook)
+        • logo              → https://gumclean.nl/logo.png
+        • og-afbeelding     → https://gumclean.nl/hero-bg.png  (vervang later evt. door
+                               een dedicated 1200×630 og-image voor scherpere previews)
+        • openingstijden    → ma–vr 09:00–16:00
+     Regel: een ONwaar veld is schadelijker dan een ontbrekend veld.
+     ════════════════════════════════════════════════════════════════════════ -->
+
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     BLOK 1 — VERRIJKTE STRUCTURED DATA  (vervang het bestaande <script type=
+     "application/ld+json"> blok in de <head> door dit hele blok)
+
+     Eén @graph dat Organization + LocalBusiness + WebSite + de drie diensten
+     aan elkaar koppelt via @id. Dit is de "kennisgraaf" die AI-engines uitlezen.
+     ───────────────────────────────────────────────────────────────────────── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://gumclean.nl/#organization",
+      "name": "GumClean",
+      "url": "https://gumclean.nl",
+      "email": "info@gumclean.nl",      "logo": {
+        "@type": "ImageObject",
+        "url": "https://gumclean.nl/logo.png"
+      },
+      "image": "https://gumclean.nl/hero-bg.png",
+      "description": "Professionele, milieuvriendelijke buitenreiniging voor winkelpuien & gevels, zonnepanelen en kauwgumverwijdering in Hoofddorp en de regio Haarlemmermeer."
+    },
+    {
+      "@type": ["LocalBusiness", "ProfessionalService"],
+      "@id": "https://gumclean.nl/#business",
+      "name": "GumClean",
+      "parentOrganization": { "@id": "https://gumclean.nl/#organization" },
+      "url": "https://gumclean.nl",
+      "email": "info@gumclean.nl",      "image": "https://gumclean.nl/hero-bg.png",
+      "priceRange": "€€",
+      "description": "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen reinigen en kauwgumverwijdering in de regio Haarlemmermeer.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Hoofddorp",
+        "addressRegion": "Noord-Holland",
+        "addressCountry": "NL"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 52.3030,
+        "longitude": 4.6889
+      },
+      "areaServed": [
+        { "@type": "City", "name": "Hoofddorp" },
+        { "@type": "AdministrativeArea", "name": "Haarlemmermeer" },
+        { "@type": "City", "name": "Nieuw-Vennep" },
+        { "@type": "City", "name": "Badhoevedorp" },
+        { "@type": "AdministrativeArea", "name": "Noord-Holland" }
+      ],
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+          "opens": "09:00",
+          "closes": "16:00"
+        }
+      ],
+      "makesOffer": [
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": "Winkelpuien & gevels reinigen",
+            "serviceType": "Gevelreiniging",
+            "description": "Professionele reiniging van winkelpuien en gevels voor een verzorgde uitstraling.",
+            "areaServed": { "@type": "AdministrativeArea", "name": "Haarlemmermeer" },
+            "provider": { "@id": "https://gumclean.nl/#business" }
+          }
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": "Zonnepanelen reinigen",
+            "serviceType": "Zonnepanelen reinigen",
+            "description": "Vakkundige reiniging van zonnepanelen om rendementsverlies door vervuiling te herstellen.",
+            "areaServed": { "@type": "AdministrativeArea", "name": "Haarlemmermeer" },
+            "provider": { "@id": "https://gumclean.nl/#business" }
+          }
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": "Kauwgumverwijdering",
+            "serviceType": "Kauwgumverwijdering",
+            "description": "Milieuvriendelijke verwijdering van kauwgum van bestrating, gevels en entrees.",
+            "areaServed": { "@type": "AdministrativeArea", "name": "Haarlemmermeer" },
+            "provider": { "@id": "https://gumclean.nl/#business" }
+          }
+        }
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://gumclean.nl/#website",
+      "url": "https://gumclean.nl",
+      "name": "GumClean",
+      "publisher": { "@id": "https://gumclean.nl/#organization" },
+      "inLanguage": "nl-NL"
+    }
+  ]
+}
+</script>
+
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     BLOK 2 — FAQ STRUCTURED DATA  (plak dit ÓÓK in de <head>, los van blok 1)
+
+     Belangrijk: de antwoorden hieronder moeten OOK zichtbaar op de pagina
+     staan (zie blok 3). Google/AI-engines verwachten dat de FAQ-schema
+     overeenkomt met zichtbare content; los schema zonder zichtbare tekst kan
+     genegeerd of als spam gezien worden.
+     ───────────────────────────────────────────────────────────────────────── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "@id": "https://gumclean.nl/#faq",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "In welke regio werkt GumClean?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "GumClean is gevestigd in Hoofddorp en werkt in de hele regio Haarlemmermeer en omgeving, waaronder Nieuw-Vennep, Badhoevedorp en de rest van Noord-Holland."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Welke diensten biedt GumClean aan?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "GumClean biedt drie kerndiensten: het reinigen van winkelpuien en gevels, het reinigen van zonnepanelen, en het milieuvriendelijk verwijderen van kauwgum van bestrating, gevels en entrees."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Hoe snel kan GumClean ter plaatse zijn?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Omdat GumClean lokaal in Hoofddorp zit, zijn wij doorgaans binnen 48 uur ter plaatse. Een vrijblijvende offerte ontvangt u binnen 24 uur."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Werkt GumClean milieuvriendelijk?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Ja. GumClean werkt milieuvriendelijk en zet in op voorkomen, verwijderen en recyclen, zodat reiniging zo min mogelijk belastend is voor de omgeving."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Voor welke organisaties werkt GumClean?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "GumClean werkt voor retailketens, winkelcentra en vastgoedbeheerders, gemeenten en BIZ-fondsen, en beheerders van bedrijventerreinen."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Hoe vaak moeten zonnepanelen gereinigd worden?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Vervuilde zonnepanelen leveren minder op. Een periodieke reiniging — vaak één tot twee keer per jaar — herstelt het rendementsverlies. Met de rekentool op de site berekent u uw verlies."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Biedt GumClean onderhoudscontracten aan?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Ja. U kunt kiezen voor een eenmalige basisreiniging of een kwartaalonderhoudscontract, zodat uw pand of locatie het hele jaar door schoon blijft."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Hoe vraag ik een offerte aan?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Vraag een vrijblijvende offerte aan via het offerteformulier of mail naar info@gumclean.nl. U ontvangt binnen 24 uur een reactie."
+      }
+    }
+  ]
+}
+</script>
+
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     BLOK 3 — ZICHTBARE FAQ-SECTIE  (plak dit in de <body>, bijv. net boven de
+     offerte-call-to-action onderaan)
+
+     Dit lost meteen twee GEO-checks op: "vraag-vormige koppen (?)" en de
+     overeenkomst met de FAQPage-schema. Pas de classes aan je eigen styling aan.
+     ───────────────────────────────────────────────────────────────────────── -->
+<section class="faq" aria-labelledby="faq-titel">
+  <h2 id="faq-titel">Veelgestelde vragen</h2>
+
+  <div class="faq-item">
+    <h3>In welke regio werkt GumClean?</h3>
+    <p>GumClean is gevestigd in <strong>Hoofddorp</strong> en werkt in de hele
+       regio <strong>Haarlemmermeer</strong> en omgeving, waaronder Nieuw-Vennep,
+       Badhoevedorp en de rest van Noord-Holland.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Welke diensten biedt GumClean aan?</h3>
+    <p>Wij hebben drie kerndiensten: <strong>winkelpuien &amp; gevels reinigen</strong>,
+       <strong>zonnepanelen reinigen</strong> en <strong>kauwgumverwijdering</strong>
+       van bestrating, gevels en entrees.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Hoe snel kan GumClean ter plaatse zijn?</h3>
+    <p>Omdat we lokaal in Hoofddorp zitten, zijn we doorgaans
+       <strong>binnen 48 uur</strong> ter plaatse. Een vrijblijvende offerte
+       ontvangt u binnen 24 uur.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Werkt GumClean milieuvriendelijk?</h3>
+    <p>Ja. We werken <strong>milieuvriendelijk</strong> en zetten in op voorkomen,
+       verwijderen en recyclen, zodat reiniging zo min mogelijk belastend is voor
+       de omgeving.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Voor welke organisaties werkt GumClean?</h3>
+    <p>We werken voor <strong>retailketens</strong>, <strong>winkelcentra en
+       vastgoedbeheerders</strong>, <strong>gemeenten en BIZ-fondsen</strong> en
+       beheerders van <strong>bedrijventerreinen</strong>.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Hoe vaak moeten zonnepanelen gereinigd worden?</h3>
+    <p>Vervuilde panelen leveren minder op. Een periodieke reiniging — vaak één
+       tot twee keer per jaar — herstelt het <strong>rendementsverlies</strong>.
+       Met de rekentool hierboven berekent u uw verlies.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Biedt GumClean onderhoudscontracten aan?</h3>
+    <p>Ja. U kiest voor een <strong>eenmalige basisreiniging</strong> of een
+       <strong>kwartaalonderhoudscontract</strong>, zodat uw pand het hele jaar
+       door schoon blijft.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Hoe vraag ik een offerte aan?</h3>
+    <p>Vraag een vrijblijvende offerte aan via het formulier of mail naar
+       <a href="mailto:info@gumclean.nl">info@gumclean.nl</a>. U ontvangt
+       <strong>binnen 24 uur</strong> een reactie.</p>
+  </div>
+</section>
+
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     BLOK 4 — META-TAGS UPGRADE  (in de <head>; vervang/voeg toe)
+
+     De site had og:type, og:title, og:description en twitter:card=summary,
+     maar geen og:image. Een afbeelding vergroot de kans op weergave in
+     social/AI-previews aanzienlijk.
+     ───────────────────────────────────────────────────────────────────────── -->
+<meta property="og:image" content="https://gumclean.nl/hero-bg.png" />
+<meta property="og:image:alt" content="GumClean — buitenreiniging in Haarlemmermeer" />
+<meta property="og:locale" content="nl_NL" />
+<meta property="og:site_name" content="GumClean" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://gumclean.nl/hero-bg.png" />
