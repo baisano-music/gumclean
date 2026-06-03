@@ -34,12 +34,9 @@ export default function Doelgroepen() {
 
               {/* Content overlay */}
               <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-3xl">{audience.emoji}</span>
-                  <h3 className="font-[family-name:var(--font-fredoka)] text-xl sm:text-2xl font-bold text-white">
-                    {audience.title}
-                  </h3>
-                </div>
+                <h3 className="font-[family-name:var(--font-fredoka)] text-xl sm:text-2xl font-bold text-white mb-2">
+                  {audience.title}
+                </h3>
                 <p className="text-white/80 text-sm sm:text-base leading-relaxed">
                   {audience.description}
                 </p>

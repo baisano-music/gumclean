@@ -34,7 +34,6 @@ export default function OfferteFormulier() {
       <section id="offerte" className="scroll-mt-20 py-20 sm:py-28 bg-surface">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <div className="bg-teal/10 border-3 border-teal/30 rounded-[2rem] p-10 sm:p-14">
-            <div className="text-6xl mb-6">🎉</div>
             <h2 className="font-[family-name:var(--font-fredoka)] text-3xl sm:text-4xl font-bold text-dark mb-4">
               Aanvraag verstuurd!
             </h2>

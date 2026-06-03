@@ -64,10 +64,10 @@ export default function BeforeAfterSlider() {
 
       {/* Labels */}
       <div className="absolute top-4 left-4 px-4 py-1.5 bg-dark/70 backdrop-blur-sm text-white text-sm font-bold rounded-full">
-        🔴 Voor
+        Voor
       </div>
       <div className="absolute top-4 right-4 px-4 py-1.5 bg-teal/80 backdrop-blur-sm text-dark text-sm font-bold rounded-full">
-        ✨ Na
+        Na
       </div>
 
       {/* Slider handle */}

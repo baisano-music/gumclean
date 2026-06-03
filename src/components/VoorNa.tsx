@@ -13,7 +13,7 @@ export default function VoorNa() {
             Resultaten
           </span>
           <h2 className="font-[family-name:var(--font-fredoka)] text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4">
-            Van zo 🔴 naar zo ✨
+            Van vies naar vlekkeloos
           </h2>
           <p className="text-white/60 text-lg max-w-xl mx-auto">
             Resultaat na één behandeling, zonder schade aan de ondergrond.
