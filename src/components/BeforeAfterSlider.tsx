@@ -30,13 +30,32 @@ export default function BeforeAfterSlider() {
     isDragging.current = false;
   }
 
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "ArrowLeft") {
+      setPosition((p) => Math.max(0, p - 5));
+    } else if (e.key === "ArrowRight") {
+      setPosition((p) => Math.min(100, p + 5));
+    } else if (e.key === "Home") {
+      setPosition(0);
+    } else if (e.key === "End") {
+      setPosition(100);
+    }
+  }
+
   return (
     <div
       ref={containerRef}
-      className="relative w-full aspect-[16/9] sm:aspect-[2/1] rounded-[2rem] overflow-hidden cursor-ew-resize select-none border-4 border-pink/30"
+      role="slider"
+      tabIndex={0}
+      aria-label="Vergelijk voor en na reiniging"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(position)}
+      className="relative w-full aspect-[16/9] sm:aspect-[2/1] rounded-[2rem] overflow-hidden cursor-ew-resize select-none border-4 border-pink/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onKeyDown={handleKeyDown}
       style={{ touchAction: "none" }}
     >
       {/* After (clean) - full background */}

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://gumclean.nl"),
   title: "GumClean | Buitenreiniging in Haarlemmermeer & Hoofddorp",
   description:
-    "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen en kauwgumverwijdering in de regio Haarlemmermeer. Vraag direct een offerte aan.",
+    "Professionele buitenreiniging in Haarlemmermeer: winkelpuien, zonnepanelen en kauwgumverwijdering voor retail, vastgoed en gemeenten. Vraag een offerte aan.",
   keywords: [
     "buitenreiniging Haarlemmermeer",
     "gevelreiniging Hoofddorp",

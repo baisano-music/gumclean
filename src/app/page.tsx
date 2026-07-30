@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import Diensten from "@/components/Diensten";
 import WaaromGumClean from "@/components/WaaromGumClean";
 import VoorNa from "@/components/VoorNa";
+import Klanten from "@/components/Klanten";
 import Doelgroepen from "@/components/Doelgroepen";
 import Zonnepanelen from "@/components/Zonnepanelen";
 import Duurzaamheid from "@/components/Duurzaamheid";
@@ -21,6 +22,7 @@ export default function Home() {
         <Diensten />
         <WaaromGumClean />
         <VoorNa />
+        <Klanten />
         <Doelgroepen />
         <Zonnepanelen />
         <Duurzaamheid />

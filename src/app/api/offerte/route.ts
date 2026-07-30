@@ -30,8 +30,40 @@ function escapeHtml(value: string) {
     .replace(/>/g, "&gt;");
 }
 
+// Header-injectie voorkomen (CR/LF in subject/replyTo) en absurd lange input afkappen.
+function sanitizeField(value: string, maxLength = 200) {
+  return value.replace(/[\r\n]+/g, " ").trim().slice(0, maxLength);
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Best-effort in-memory rate limit per IP: geen zware afhankelijkheid nodig
+// voor het verkeersvolume van deze site. Reset zichzelf elk uur.
+const RATE_LIMIT = 10;
+const RATE_WINDOW_MS = 60 * 60 * 1000;
+const hits = new Map<string, { count: number; windowStart: number }>();
+
+function isRateLimited(ip: string) {
+  const now = Date.now();
+  const entry = hits.get(ip);
+  if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
+    hits.set(ip, { count: 1, windowStart: now });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > RATE_LIMIT;
+}
+
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    if (isRateLimited(ip)) {
+      return NextResponse.json(
+        { error: "Te veel aanvragen. Probeer het later opnieuw." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
 
     // Honeypot: bots vullen dit verborgen veld in. Doe alsof het lukte, zodat
@@ -44,6 +76,13 @@ export async function POST(request: Request) {
     if (!naam || !bedrijf || !telefoon || !email || !locatie) {
       return NextResponse.json(
         { error: "Vul alle verplichte velden in." },
+        { status: 400 }
+      );
+    }
+
+    if (typeof email !== "string" || !EMAIL_RE.test(email)) {
+      return NextResponse.json(
+        { error: "Vul een geldig e-mailadres in." },
         { status: 400 }
       );
     }
@@ -78,8 +117,8 @@ ${rows
     const { error } = await resend.emails.send({
       from: FROM,
       to: [TO],
-      replyTo: email,
-      subject: `Nieuwe offerteaanvraag — ${bedrijf}`,
+      replyTo: sanitizeField(email, 254),
+      subject: `Nieuwe offerteaanvraag — ${sanitizeField(bedrijf, 100)}`,
       text,
       html,
     });

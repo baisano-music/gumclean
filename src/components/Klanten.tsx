@@ -30,7 +30,7 @@ export default function Klanten() {
     <section id="klanten" className="scroll-mt-20 py-20 sm:py-28 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <span className="inline-block px-4 py-1.5 bg-[#2d6a4f]/10 text-[#2d6a4f] font-semibold text-sm rounded-full mb-4">
+          <span className="inline-block px-4 py-1.5 bg-green-dark/10 text-green-dark font-semibold text-sm rounded-full mb-4">
             Referenties
           </span>
           <h2 className="font-[family-name:var(--font-fredoka)] text-4xl sm:text-5xl lg:text-6xl font-bold text-dark">
@@ -46,22 +46,22 @@ export default function Klanten() {
           {REFERENCES.map((ref) => (
             <div
               key={ref.org}
-              className="bg-white rounded-[2rem] p-8 border-2 border-[#2d6a4f]/15 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col"
+              className="bg-white rounded-[2rem] p-8 border-2 border-green-dark/15 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col"
             >
-              <div className="w-14 h-14 rounded-full bg-gray-100 border-2 border-[#2d6a4f]/20 flex items-center justify-center mb-5">
-                <span className="font-[family-name:var(--font-fredoka)] font-bold text-[#2d6a4f]">
+              <div className="w-14 h-14 rounded-full bg-gray-100 border-2 border-green-dark/20 flex items-center justify-center mb-5">
+                <span className="font-[family-name:var(--font-fredoka)] font-bold text-green-dark">
                   {ref.initials}
                 </span>
               </div>
               <p className="text-dark/80 leading-relaxed italic mb-6 flex-1">
                 “{ref.quote}”
               </p>
-              <div className="border-t border-[#2d6a4f]/15 pt-4">
+              <div className="border-t border-green-dark/15 pt-4">
                 <p className="font-bold text-dark">{ref.name}</p>
                 {ref.role && (
                   <p className="text-sm text-muted">{ref.role}</p>
                 )}
-                <p className="text-sm text-[#2d6a4f] font-semibold">{ref.org}</p>
+                <p className="text-sm text-green-dark font-semibold">{ref.org}</p>
               </div>
             </div>
           ))}
@@ -71,7 +71,7 @@ export default function Klanten() {
           Benieuwd wat GumClean voor uw locatie kan betekenen?{" "}
           <a
             href="#offerte"
-            className="text-[#2d6a4f] font-semibold hover:underline"
+            className="text-green-dark font-semibold hover:underline"
           >
 Vraag een gratis demonstratie aan
           </a>

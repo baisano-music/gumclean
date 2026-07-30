@@ -1,4 +1,4 @@
-import { FAQ_ITEMS } from "./constants";
+import { COMPANY, FAQ_ITEMS } from "./constants";
 
 const SITE = "https://gumclean.nl";
 
@@ -25,12 +25,15 @@ export const siteJsonLd = {
       parentOrganization: { "@id": `${SITE}/#organization` },
       url: SITE,
       email: "info@gumclean.nl",
+      telephone: COMPANY.phoneHref,
       image: `${SITE}/hero-bg.png`,
       priceRange: "€€",
       description:
         "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen reinigen en kauwgumverwijdering in de regio Haarlemmermeer.",
       address: {
         "@type": "PostalAddress",
+        streetAddress: COMPANY.street,
+        postalCode: COMPANY.postalCode,
         addressLocality: "Hoofddorp",
         addressRegion: "Noord-Holland",
         addressCountry: "NL",

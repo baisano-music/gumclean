@@ -2,7 +2,7 @@ export default function DemoCTA() {
   return (
     <section id="demo" className="scroll-mt-20 py-20 sm:py-28 bg-surface">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-[#2d6a4f] rounded-[2.5rem] px-8 py-16 sm:px-16 sm:py-20 shadow-2xl text-center relative overflow-hidden">
+        <div className="bg-green-dark rounded-[2.5rem] px-8 py-16 sm:px-16 sm:py-20 shadow-2xl text-center relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 pointer-events-none"
                style={{
                  backgroundImage:
@@ -23,7 +23,7 @@ export default function DemoCTA() {
             <div className="flex justify-center items-center">
               <a
                 href="#offerte"
-                className="inline-flex items-center justify-center px-8 py-4 bg-white text-[#2d6a4f] text-base font-bold rounded-full hover:bg-gray-100 shadow-lg transition-all hover:scale-105 w-full sm:w-auto"
+                className="inline-flex items-center justify-center px-8 py-4 bg-white text-green-dark text-base font-bold rounded-full hover:bg-gray-100 shadow-lg transition-all hover:scale-105 w-full sm:w-auto"
               >
                 Plan een gratis demo →
               </a>

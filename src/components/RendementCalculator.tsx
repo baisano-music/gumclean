@@ -117,7 +117,7 @@ export default function RendementCalculator() {
 
       <a
         href="#offerte"
-        className="mt-5 inline-flex w-full items-center justify-center px-6 py-3 bg-teal-dark text-white text-base font-bold rounded-full hover:bg-teal shadow-lg shadow-teal-dark/30 transition-all hover:scale-[1.02]"
+        className="mt-5 inline-flex w-full items-center justify-center px-6 py-3 bg-teal-dark text-dark text-base font-bold rounded-full hover:bg-teal shadow-lg shadow-teal-dark/30 transition-all hover:scale-[1.02]"
       >
         Vraag een offerte aan →
       </a>

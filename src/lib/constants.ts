@@ -3,11 +3,14 @@ export const COMPANY = {
   tagline: "Buitenreiniging voor retail, vastgoed en gemeenten in Haarlemmermeer en omgeving.",
   location: "Hoofddorp",
   region: "Haarlemmermeer",
-  phone: "",
+  street: "Manenburgdreef 93",
+  postalCode: "2135 GV",
+  phone: "06 4221 0739",
+  phoneHref: "+31642210739",
   email: "info@gumclean.nl",
   website: "gumclean.nl",
-  kvk: "00000000",
-  btw: "NL000000000B01",
+  kvk: "42082782",
+  btw: "NL005481607B04",
 } as const;
 
 export const NAV_ITEMS = [

@@ -3,7 +3,7 @@ export default function Contract() {
     <section id="contract" className="scroll-mt-20 py-20 sm:py-28 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <span className="inline-block px-4 py-1.5 bg-[#2d6a4f]/10 text-[#2d6a4f] font-semibold text-sm rounded-full mb-4">
+          <span className="inline-block px-4 py-1.5 bg-green-dark/10 text-green-dark font-semibold text-sm rounded-full mb-4">
             Onderhoudscontract
           </span>
           <h2 className="font-[family-name:var(--font-fredoka)] text-4xl sm:text-5xl lg:text-6xl font-bold text-dark">
@@ -17,7 +17,7 @@ export default function Contract() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {/* Kaart A */}
-          <div className="bg-white rounded-[2rem] p-8 sm:p-10 border-2 border-[#2d6a4f]/20 shadow-lg flex flex-col">
+          <div className="bg-white rounded-[2rem] p-8 sm:p-10 border-2 border-green-dark/20 shadow-lg flex flex-col">
             <span className="inline-block self-start px-3 py-1 bg-gray-100 text-dark text-xs font-bold rounded-full mb-4 uppercase tracking-wide">
               Populair als start
             </span>
@@ -32,22 +32,22 @@ export default function Contract() {
                 "Gratis demonstratie vooraf mogelijk",
               ].map((item) => (
                 <li key={item} className="flex gap-3 text-dark/80">
-                  <span className="text-[#2d6a4f] font-bold">✓</span>
+                  <span className="text-green-dark font-bold">✓</span>
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
             <a
               href="#offerte"
-              className="inline-flex justify-center items-center px-6 py-3 bg-white text-[#2d6a4f] text-sm font-bold rounded-full border-2 border-[#2d6a4f] hover:bg-[#2d6a4f] hover:text-white transition-colors"
+              className="inline-flex justify-center items-center px-6 py-3 bg-white text-green-dark text-sm font-bold rounded-full border-2 border-green-dark hover:bg-green-dark hover:text-white transition-colors"
             >
               Vraag offerte aan
             </a>
           </div>
 
           {/* Kaart B, highlighted */}
-          <div className="bg-[#2d6a4f] rounded-[2rem] p-8 sm:p-10 shadow-2xl flex flex-col relative md:-translate-y-4">
-            <span className="inline-block self-start px-3 py-1 bg-white text-[#2d6a4f] text-xs font-bold rounded-full mb-4 uppercase tracking-wide">
+          <div className="bg-green-dark rounded-[2rem] p-8 sm:p-10 shadow-2xl flex flex-col relative md:-translate-y-4">
+            <span className="inline-block self-start px-3 py-1 bg-white text-green-dark text-xs font-bold rounded-full mb-4 uppercase tracking-wide">
 Aanbevolen
             </span>
             <h3 className="font-[family-name:var(--font-fredoka)] text-2xl sm:text-3xl font-bold text-white mb-6">
@@ -69,7 +69,7 @@ Aanbevolen
             </ul>
             <a
               href="#offerte"
-              className="inline-flex justify-center items-center px-6 py-3 bg-white text-[#2d6a4f] text-sm font-bold rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+              className="inline-flex justify-center items-center px-6 py-3 bg-white text-green-dark text-sm font-bold rounded-full hover:bg-gray-100 transition-colors shadow-lg"
             >
               Start het gesprek
             </a>

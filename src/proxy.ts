@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { createHash, timingSafeEqual } from 'node:crypto'
 
 // Tijdelijke afscherming van de hele site (KVK/UWV "onder constructie"-omgeving).
 //
@@ -17,6 +18,14 @@ const REALM = 'GumClean - tijdelijk afgeschermd'
 // UWV-startperiode gaat in op 1 augustus 2026 (Europe/Amsterdam, UTC+2 in de zomer).
 const GATE_EXPIRES_AT = new Date('2026-08-01T00:00:00+02:00')
 
+// Vergelijkt via een hash van vaste lengte, zodat het niet uitmaakt hoe lang
+// het ingevoerde wachtwoord is en een timing-aanval geen informatie oplevert.
+function safeEqual(a: string, b: string) {
+  const hashA = createHash('sha256').update(a).digest()
+  const hashB = createHash('sha256').update(b).digest()
+  return timingSafeEqual(hashA, hashB)
+}
+
 export function proxy(request: NextRequest) {
   const password = process.env.SITE_GATE_PASSWORD
 
@@ -28,11 +37,15 @@ export function proxy(request: NextRequest) {
   const header = request.headers.get('authorization')
 
   if (header?.startsWith('Basic ')) {
-    const decoded = atob(header.slice('Basic '.length))
-    // Gebruikersnaam negeren we; alleen het wachtwoord telt.
-    const provided = decoded.slice(decoded.indexOf(':') + 1)
-    if (provided === password) {
-      return NextResponse.next()
+    try {
+      const decoded = atob(header.slice('Basic '.length))
+      // Gebruikersnaam negeren we; alleen het wachtwoord telt.
+      const provided = decoded.slice(decoded.indexOf(':') + 1)
+      if (safeEqual(provided, password)) {
+        return NextResponse.next()
+      }
+    } catch {
+      // Onbruikbare Basic-auth header (geen geldige base64) -> gewoon 401.
     }
   }
 
@@ -45,6 +58,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Alles afschermen: pagina's, API en statische assets.
-  matcher: '/:path*',
+  // Alles afschermen behalve statische assets en metadata-bestanden, die
+  // anders bij elke request nodeloos door deze Node.js-functie zouden lopen.
+  matcher: '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|llms.txt).*)',
 }

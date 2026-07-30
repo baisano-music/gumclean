@@ -72,8 +72,9 @@ export default function OfferteFormulier() {
 
           <div className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-dark mb-2">Naam *</label>
+              <label htmlFor="naam" className="block text-sm font-semibold text-dark mb-2">Naam *</label>
               <input
+                id="naam"
                 name="naam"
                 required
                 className="w-full px-5 py-3 bg-surface border-2 border-pink/20 rounded-xl text-dark placeholder-muted focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/20 transition-colors"
@@ -82,8 +83,9 @@ export default function OfferteFormulier() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-dark mb-2">Bedrijfsnaam *</label>
+              <label htmlFor="bedrijf" className="block text-sm font-semibold text-dark mb-2">Bedrijfsnaam *</label>
               <input
+                id="bedrijf"
                 name="bedrijf"
                 required
                 className="w-full px-5 py-3 bg-surface border-2 border-pink/20 rounded-xl text-dark placeholder-muted focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/20 transition-colors"
@@ -93,8 +95,9 @@ export default function OfferteFormulier() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">Telefoonnummer *</label>
+                <label htmlFor="telefoon" className="block text-sm font-semibold text-dark mb-2">Telefoonnummer *</label>
                 <input
+                  id="telefoon"
                   name="telefoon"
                   type="tel"
                   required
@@ -103,8 +106,9 @@ export default function OfferteFormulier() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">E-mailadres *</label>
+                <label htmlFor="email" className="block text-sm font-semibold text-dark mb-2">E-mailadres *</label>
                 <input
+                  id="email"
                   name="email"
                   type="email"
                   required
@@ -115,8 +119,9 @@ export default function OfferteFormulier() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-dark mb-2">Locatie / adres *</label>
+              <label htmlFor="locatie" className="block text-sm font-semibold text-dark mb-2">Locatie / adres *</label>
               <input
+                id="locatie"
                 name="locatie"
                 required
                 className="w-full px-5 py-3 bg-surface border-2 border-pink/20 rounded-xl text-dark placeholder-muted focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/20 transition-colors"
@@ -126,8 +131,9 @@ export default function OfferteFormulier() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">Waar heeft u behoefte aan?</label>
+                <label htmlFor="dienst" className="block text-sm font-semibold text-dark mb-2">Waar heeft u behoefte aan?</label>
                 <select
+                  id="dienst"
                   name="dienst"
                   className="w-full px-5 py-3 bg-surface border-2 border-pink/20 rounded-xl text-dark focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/20 transition-colors"
                 >
@@ -140,8 +146,9 @@ export default function OfferteFormulier() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">Aantal locaties (optioneel)</label>
+                <label htmlFor="locaties" className="block text-sm font-semibold text-dark mb-2">Aantal locaties (optioneel)</label>
                 <input
+                  id="locaties"
                   name="locaties"
                   type="number"
                   min={1}
@@ -152,8 +159,9 @@ export default function OfferteFormulier() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-dark mb-2">Geschatte oppervlakte</label>
+              <label htmlFor="oppervlakte" className="block text-sm font-semibold text-dark mb-2">Geschatte oppervlakte</label>
               <select
+                id="oppervlakte"
                 name="oppervlakte"
                 className="w-full px-5 py-3 bg-surface border-2 border-pink/20 rounded-xl text-dark focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/20 transition-colors"
               >
@@ -165,8 +173,9 @@ export default function OfferteFormulier() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-dark mb-2">Bericht / toelichting</label>
+              <label htmlFor="bericht" className="block text-sm font-semibold text-dark mb-2">Bericht / toelichting</label>
               <textarea
+                id="bericht"
                 name="bericht"
                 rows={4}
                 className="w-full px-5 py-3 bg-surface border-2 border-pink/20 rounded-xl text-dark placeholder-muted focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/20 transition-colors resize-none"
@@ -184,7 +193,7 @@ export default function OfferteFormulier() {
           <button
             type="submit"
             disabled={status === "loading"}
-            className="mt-8 w-full px-8 py-4 bg-pink text-white text-lg font-bold rounded-full hover:bg-pink-dark shadow-lg shadow-pink/30 transition-all hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100"
+            className="mt-8 w-full px-8 py-4 bg-pink-dark text-white text-lg font-bold rounded-full hover:bg-pink-hover shadow-lg shadow-pink/30 transition-all hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100"
           >
             {status === "loading" ? "Versturen..." : "Verstuur aanvraag →"}
           </button>

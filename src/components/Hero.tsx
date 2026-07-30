@@ -1,5 +1,3 @@
-"use client";
-
 import { STATS } from "@/lib/constants";
 
 export default function Hero() {

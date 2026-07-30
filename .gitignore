@@ -37,6 +37,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# business documents — never belong in a public repo
+/Facturen/
+/Offertes/
+/Businessplan/
+*.docx
+*.xlsx
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

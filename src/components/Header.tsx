@@ -37,7 +37,7 @@ export default function Header() {
           <div className="hidden md:block">
             <a
               href="#offerte"
-              className="inline-flex items-center px-6 py-3 bg-pink text-white text-sm font-bold rounded-full hover:bg-pink-dark shadow-purple/30 shadow-lg hover:animate-wobble transition-all"
+              className="inline-flex items-center px-6 py-3 bg-pink-dark text-white text-sm font-bold rounded-full hover:bg-pink-hover shadow-purple/30 shadow-lg hover:animate-wobble transition-all"
             >
               Offerte aanvragen
             </a>
@@ -47,6 +47,8 @@ export default function Header() {
             onClick={() => setMenuOpen(!menuOpen)}
             className="md:hidden p-2 text-dark hover:text-pink transition-colors"
             aria-label="Menu openen"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {menuOpen ? (
@@ -60,7 +62,7 @@ export default function Header() {
       </div>
 
       {menuOpen && (
-        <div className="md:hidden bg-white/95 backdrop-blur border-t border-pink/10">
+        <div id="mobile-menu" className="md:hidden bg-white/95 backdrop-blur border-t border-pink/10">
           <div className="px-4 py-4 space-y-2">
             {NAV_ITEMS.map((item) => (
               <a
@@ -75,7 +77,7 @@ export default function Header() {
             <a
               href="#offerte"
               onClick={() => setMenuOpen(false)}
-              className="block w-full text-center px-6 py-3 bg-pink text-white text-sm font-bold rounded-full hover:bg-pink-dark transition-colors"
+              className="block w-full text-center px-6 py-3 bg-pink-dark text-white text-sm font-bold rounded-full hover:bg-pink-hover transition-colors"
             >
               Offerte aanvragen
             </a>

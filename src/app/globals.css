@@ -5,6 +5,9 @@
   --color-pink: #FF3D9A;
   --color-pink-light: #FF6FB5;
   --color-pink-dark: #D4267A;
+  /* Darker than pink-dark, for hover/active on interactive elements — keeps
+     the resting state (pink-dark, 4.82:1 on white) from ever going lighter. */
+  --color-pink-hover: #B22B6C;
   --color-purple: #7B2FFF;
   --color-purple-light: #9B5FFF;
   --color-purple-dark: #5A10E0;
@@ -13,10 +16,17 @@
   --color-teal-dark: #00B89D;
   --color-yellow: #FFE03D;
   --color-yellow-light: #FFF07A;
+  /* Official brand/bus green — atmosphere and imagery only (fails AA as text,
+     see design-system-v2 accessibility audit). Not for interactive elements. */
+  --color-green: #2FA84F;
+  /* The accessible, darker green already used across Klanten/Duurzaamheid/
+     Contract/DemoCTA for text, borders and solid CTA fills. */
+  --color-green-dark: #2D6A4F;
   --color-surface: #FFF5FB;
   --color-dark: #1A0A2E;
   --color-dark-light: #2D1650;
-  --color-muted: #8B6F8E;
+  /* Darkened from #8B6F8E (3.9:1, fails AA) to pass 4.5:1 on white/surface. */
+  --color-muted: #6E5671;
 
   /* Legacy brand mapping */
   --color-brand-50: #FFF5FB;
@@ -135,4 +145,13 @@ body {
 /* Pill utility */
 .pill {
   border-radius: 9999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
