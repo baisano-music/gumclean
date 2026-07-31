@@ -21,7 +21,7 @@ const VRAGEN = [
   {
     vraag: "Wat kost gevelreiniging per m²?",
     antwoord:
-      "Er is geen vast bedrag per m² — de prijs volgt uit de tijd die de klus kost, keer € 67,50 per uur. Een grote, vlakke gevel gaat sneller per m² dan een klein, gedetailleerd oppervlak.",
+      "Er is geen vast bedrag per m² — de prijs volgt uit de tijd die de klus kost, keer het uurtarief. Een grote, vlakke gevel gaat sneller per m² dan een klein, gedetailleerd oppervlak.",
   },
   {
     vraag: "Wat vraagt een gevelreiniger per uur?",
@@ -68,7 +68,7 @@ export default function GevelreinigingKosten() {
       <PaginaIntro
         eyebrow="Prijzen"
         h1="Wat kost gevelreiniging? Prijzen per m² en per uur"
-        intro="Vaste tarieven, geen offertetraject van weken. € 540 per mandag of € 67,50 per uur, excl. btw."
+        intro="Vaste tarieven, geen offertetraject van weken. Hieronder het uur- en dagtarief, en een rekenvoorbeeld per pandtype."
       />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
@@ -79,9 +79,9 @@ export default function GevelreinigingKosten() {
         <Vraag vraag={VRAGEN[1].vraag}>
           <p>{VRAGEN[1].antwoord}</p>
           <p>
-            Reken zelf mee: (aantal uur × € 67,50) ÷ aantal m² = richtprijs per
-            m². Een klein, gedetailleerd gevelgedeelte kost per m² dus meer dan
-            een grote, vlakke gevel in één doorgaande beweging.
+            Reken zelf mee: (aantal uur × uurtarief) ÷ aantal m² = richtprijs
+            per m². Een klein, gedetailleerd gevelgedeelte kost per m² dus meer
+            dan een grote, vlakke gevel in één doorgaande beweging.
           </p>
         </Vraag>
 
