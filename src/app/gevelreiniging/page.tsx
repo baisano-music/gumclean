@@ -36,7 +36,7 @@ const VRAGEN = [
   {
     vraag: "Wat kost gevelreiniging voor een bedrijfspand?",
     antwoord:
-      "Wij werken op basis van een dagtarief van € 540 (mandag van 8 uur) of € 67,50 per uur, excl. btw. Op de kostenpagina staat een rekenvoorbeeld per pandtype.",
+      "Wij werken op basis van een dagtarief vanaf € 540 (mandag van 8 uur) of vanaf € 67,50 per uur, excl. btw. Op de kostenpagina staat een indicatief rekenvoorbeeld per pandtype.",
   },
 ];
 

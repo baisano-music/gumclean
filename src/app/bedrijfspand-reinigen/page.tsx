@@ -26,7 +26,7 @@ const VRAGEN = [
   {
     vraag: "Wat kost bedrijfspand reinigen?",
     antwoord:
-      "Vanaf € 67,50 per uur of € 540 per mandag van 8 uur, excl. btw. Op de kostenpagina voor gevelreiniging staat een uitgebreid rekenvoorbeeld; hieronder een indicatie voor de buitenkant als geheel.",
+      "Vanaf € 67,50 per uur of vanaf € 540 per mandag van 8 uur, excl. btw — de uiteindelijke prijs hangt af van de klus. Op de kostenpagina voor gevelreiniging staat een uitgebreid rekenvoorbeeld; hieronder een indicatie voor de buitenkant als geheel.",
   },
 ];
 
@@ -127,19 +127,19 @@ export default function BedrijfspandReinigen() {
                 <tr>
                   <th className="text-left font-semibold text-dark px-4 py-3">Pandtype</th>
                   <th className="text-left font-semibold text-dark px-4 py-3">Voorbeeldscope</th>
-                  <th className="text-right font-semibold text-dark px-4 py-3">Richtprijs (excl. btw)</th>
+                  <th className="text-right font-semibold text-dark px-4 py-3">Richtprijs vanaf (excl. btw)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-pink/10">
                 <tr>
                   <td className="px-4 py-3 align-top">Klein kantoorpand met entree</td>
                   <td className="px-4 py-3 align-top">Gevel, entree en glas begane grond, ± 3 uur</td>
-                  <td className="px-4 py-3 align-top text-right font-semibold text-dark">€ 202,50</td>
+                  <td className="px-4 py-3 align-top text-right font-semibold text-dark">vanaf € 202,50</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-3 align-top">Gemiddeld bedrijfspand</td>
                   <td className="px-4 py-3 align-top">Gevel, entree, glas en klein terrein, ± 1 mandag</td>
-                  <td className="px-4 py-3 align-top text-right font-semibold text-dark">€ 540,00</td>
+                  <td className="px-4 py-3 align-top text-right font-semibold text-dark">vanaf € 540,00</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-3 align-top">Bedrijfsverzamelgebouw</td>

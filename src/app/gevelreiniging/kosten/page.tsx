@@ -8,7 +8,7 @@ import { faqJsonLd, serviceJsonLd } from "@/lib/structuredData";
 export const metadata: Metadata = {
   title: "Wat kost gevelreiniging? Prijzen per m² en per uur | GumClean",
   description:
-    "Gevelreiniging kost € 67,50 per uur of € 540 per mandag, excl. btw. Rekenvoorbeeld per pandtype en wat wel en niet is inbegrepen.",
+    "Gevelreiniging kost vanaf € 67,50 per uur of vanaf € 540 per mandag, excl. btw. Indicatief rekenvoorbeeld per pandtype en wat wel en niet is inbegrepen.",
   alternates: { canonical: "https://gumclean.nl/gevelreiniging/kosten" },
 };
 
@@ -16,7 +16,7 @@ const VRAGEN = [
   {
     vraag: "Wat kost gevelreiniging?",
     antwoord:
-      "Gevelreiniging kost bij GumClean € 540 per mandag van 8 uur, of € 67,50 per uur, excl. btw. Voor de meeste winkelpuien en kantoorentrees is geen hele dag nodig — reken hieronder mee met uw pandtype.",
+      "Gevelreiniging kost bij GumClean vanaf € 540 per mandag van 8 uur, of vanaf € 67,50 per uur, excl. btw — de uiteindelijke prijs hangt af van de klus. Voor de meeste winkelpuien en kantoorentrees is geen hele dag nodig — reken hieronder mee met uw pandtype.",
   },
   {
     vraag: "Wat kost gevelreiniging per m²?",
@@ -26,7 +26,7 @@ const VRAGEN = [
   {
     vraag: "Wat vraagt een gevelreiniger per uur?",
     antwoord:
-      "€ 67,50 per uur, excl. btw. Daarin zitten reistijd, brandstof, water, osmose en verbruiksmateriaal; hoogwerkerhuur is exclusief en wordt 1-op-1 doorbelast tegen kostprijs.",
+      "Vanaf € 67,50 per uur, excl. btw. Daarin zitten reistijd, brandstof, water, osmose en verbruiksmateriaal; hoogwerkerhuur is exclusief en wordt 1-op-1 doorbelast tegen kostprijs.",
   },
   {
     vraag: "Bieden jullie ook gevel impregneren aan?",
@@ -97,7 +97,7 @@ export default function GevelreinigingKosten() {
                   <th className="text-left font-semibold text-dark px-4 py-3">Pandtype</th>
                   <th className="text-left font-semibold text-dark px-4 py-3">Geschat oppervlak</th>
                   <th className="text-left font-semibold text-dark px-4 py-3">Geschatte tijd</th>
-                  <th className="text-right font-semibold text-dark px-4 py-3">Richtprijs (excl. btw)</th>
+                  <th className="text-right font-semibold text-dark px-4 py-3">Richtprijs vanaf (excl. btw)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-pink/10">
@@ -105,19 +105,19 @@ export default function GevelreinigingKosten() {
                   <td className="px-4 py-3 align-top">Kleine winkelpui</td>
                   <td className="px-4 py-3 align-top">tot 30 m²</td>
                   <td className="px-4 py-3 align-top">± 1,5 uur</td>
-                  <td className="px-4 py-3 align-top text-right font-semibold text-dark">€ 101,25</td>
+                  <td className="px-4 py-3 align-top text-right font-semibold text-dark">vanaf € 101,25</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-3 align-top">Gemiddelde winkelpui / kantoorentree</td>
                   <td className="px-4 py-3 align-top">30-80 m²</td>
                   <td className="px-4 py-3 align-top">± 3 uur</td>
-                  <td className="px-4 py-3 align-top text-right font-semibold text-dark">€ 202,50</td>
+                  <td className="px-4 py-3 align-top text-right font-semibold text-dark">vanaf € 202,50</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-3 align-top">Bedrijfspand, één gevelzijde</td>
                   <td className="px-4 py-3 align-top">80-200 m²</td>
                   <td className="px-4 py-3 align-top">± 4 uur (halve mandag)</td>
-                  <td className="px-4 py-3 align-top text-right font-semibold text-dark">€ 270,00</td>
+                  <td className="px-4 py-3 align-top text-right font-semibold text-dark">vanaf € 270,00</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-3 align-top">Bedrijfsverzamelgebouw / meerdere gevelzijden</td>
