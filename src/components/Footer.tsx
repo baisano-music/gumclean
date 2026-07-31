@@ -1,5 +1,13 @@
 import Image from "next/image";
+import Link from "next/link";
 import { COMPANY, NAV_ITEMS } from "@/lib/constants";
+
+const GEVEL_LINKS = [
+  { href: "/gevelreiniging", label: "Gevelreiniging" },
+  { href: "/gevelreiniging/kosten", label: "Kosten gevelreiniging" },
+  { href: "/bedrijfspand-reinigen", label: "Bedrijfspand reinigen" },
+  { href: "/voor-en-na", label: "Voor en na" },
+];
 
 export default function Footer() {
   return (
@@ -9,7 +17,7 @@ export default function Footer() {
       <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-purple/5 rounded-full blur-3xl" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div>
             <div className="mb-5">
               <Image
@@ -50,6 +58,22 @@ export default function Footer() {
           </div>
 
           <div>
+            <h3 className="font-[family-name:var(--font-fredoka)] text-white font-bold text-lg mb-5">Gevelreiniging</h3>
+            <ul className="space-y-3">
+              {GEVEL_LINKS.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="text-sm hover:text-pink transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
             <h3 className="font-[family-name:var(--font-fredoka)] text-white font-bold text-lg mb-5">Contact</h3>
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-3">
@@ -81,8 +105,8 @@ export default function Footer() {
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-white/40">
           <p>&copy; {new Date().getFullYear()} {COMPANY.name}, {COMPANY.website} · KvK {COMPANY.kvk}</p>
           <div className="flex gap-4">
-            <a href="#diensten" className="hover:text-pink transition-colors">Diensten</a>
-            <a href="#offerte" className="hover:text-pink transition-colors">Contact</a>
+            <Link href="/#diensten" className="hover:text-pink transition-colors">Diensten</Link>
+            <Link href="/#offerte" className="hover:text-pink transition-colors">Contact</Link>
             <span>Privacy</span>
           </div>
         </div>

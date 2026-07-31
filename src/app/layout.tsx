@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Fredoka, DM_Sans } from "next/font/google";
-import { siteJsonLd, faqJsonLd } from "@/lib/structuredData";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { siteJsonLd } from "@/lib/structuredData";
 import "./globals.css";
 
 const fredoka = Fredoka({
@@ -19,20 +21,22 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://gumclean.nl"),
   title: "GumClean | Buitenreiniging in Haarlemmermeer & Hoofddorp",
   description:
-    "Professionele buitenreiniging in Haarlemmermeer: winkelpuien, zonnepanelen en kauwgumverwijdering voor retail, vastgoed en gemeenten. Vraag een offerte aan.",
+    "Professionele buitenreiniging in Haarlemmermeer: gevels, zonnepanelen, kauwgum- en graffitiverwijdering voor retail, vastgoed en gemeenten.",
   keywords: [
     "buitenreiniging Haarlemmermeer",
     "gevelreiniging Hoofddorp",
     "zonnepanelen reinigen",
     "winkelpui reinigen",
     "kauwgum verwijderen Haarlemmermeer",
+    "graffiti verwijderen Haarlemmermeer",
+    "terreinreiniging Hoofddorp",
     "professionele reiniging",
     "GumClean",
   ],
   openGraph: {
     title: "GumClean | Buitenreiniging in Haarlemmermeer & Hoofddorp",
     description:
-      "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen en kauwgumverwijdering in de regio Haarlemmermeer.",
+      "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen, kauwgum- en graffitiverwijdering in de regio Haarlemmermeer.",
     url: "https://gumclean.nl",
     siteName: "GumClean",
     locale: "nl_NL",
@@ -48,7 +52,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GumClean | Buitenreiniging in Haarlemmermeer & Hoofddorp",
     description:
-      "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen en kauwgumverwijdering in de regio Haarlemmermeer.",
+      "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen, kauwgum- en graffitiverwijdering in de regio Haarlemmermeer.",
     images: ["/hero-bg.png"],
   },
   alternates: {
@@ -72,12 +76,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
       </head>
-      <body className="min-h-screen flex flex-col">{children}</body>
+      <body className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1">{children}</main>
+        <Footer />
+      </body>
     </html>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { NAV_ITEMS } from "@/lib/constants";
 
 export default function Header() {
@@ -11,7 +12,7 @@ export default function Header() {
     <header className="fixed top-0 w-full z-50 glass border-b border-pink/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          <a href="#" className="flex items-center shrink-0">
+          <Link href="/" className="flex items-center shrink-0">
             <Image
               src="/logo.png"
               alt="GumClean"
@@ -20,27 +21,27 @@ export default function Header() {
               className="h-10 sm:h-12 w-auto"
               priority
             />
-          </a>
+          </Link>
 
           <nav className="hidden md:flex items-center gap-2">
             {NAV_ITEMS.map((item) => (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 className="px-4 py-2 text-sm font-semibold text-dark rounded-full hover:bg-pink/10 hover:text-pink transition-colors"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
 
           <div className="hidden md:block">
-            <a
-              href="#offerte"
+            <Link
+              href="/#offerte"
               className="inline-flex items-center px-6 py-3 bg-pink-dark text-white text-sm font-bold rounded-full hover:bg-pink-hover shadow-purple/30 shadow-lg hover:animate-wobble transition-all"
             >
               Offerte aanvragen
-            </a>
+            </Link>
           </div>
 
           <button
@@ -65,22 +66,22 @@ export default function Header() {
         <div id="mobile-menu" className="md:hidden bg-white/95 backdrop-blur border-t border-pink/10">
           <div className="px-4 py-4 space-y-2">
             {NAV_ITEMS.map((item) => (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
                 className="block px-4 py-2 text-sm font-semibold text-dark rounded-full hover:bg-pink/10 hover:text-pink"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
-            <a
-              href="#offerte"
+            <Link
+              href="/#offerte"
               onClick={() => setMenuOpen(false)}
               className="block w-full text-center px-6 py-3 bg-pink-dark text-white text-sm font-bold rounded-full hover:bg-pink-hover transition-colors"
             >
               Offerte aanvragen
-            </a>
+            </Link>
           </div>
         </div>
       )}

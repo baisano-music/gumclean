@@ -13,12 +13,14 @@ export const COMPANY = {
   btw: "NL005481607B04",
 } as const;
 
+// Verwijzen naar anchors op de homepage. Met een voorloop-"/" werken ze ook
+// vanaf de andere pagina's (browser laadt eerst "/", springt dan naar de anchor).
 export const NAV_ITEMS = [
-  { label: "Diensten", href: "#diensten" },
-  { label: "Zonnepanelen", href: "#zonnepanelen" },
-  { label: "Doelgroepen", href: "#doelgroepen" },
-  { label: "Werkwijze", href: "#waarom" },
-  { label: "Offerte", href: "#offerte" },
+  { label: "Diensten", href: "/#diensten" },
+  { label: "Zonnepanelen", href: "/#zonnepanelen" },
+  { label: "Doelgroepen", href: "/#doelgroepen" },
+  { label: "Werkwijze", href: "/#waarom" },
+  { label: "Offerte", href: "/#offerte" },
 ] as const;
 
 export const SERVICES = [
@@ -45,6 +47,14 @@ export const SERVICES = [
     labels: ["Centrumgebieden", "Winkelcentra", "Gemeenten"],
     badge: null,
     color: "teal" as const,
+  },
+  {
+    title: "Terreinreiniging & graffitiverwijdering",
+    description:
+      "Vervuilde bestrating en graffiti geven een verwaarloosde indruk, ook als de rest van het pand piekfijn is. Wij reinigen terreinen, opritten en verhardingen en verwijderen graffiti van gevels en muren, snel en zonder schade aan de ondergrond.",
+    labels: ["Bedrijventerreinen", "Gemeenten", "Vastgoedbeheerders"],
+    badge: null,
+    color: "green" as const,
   },
 ] as const;
 
@@ -115,7 +125,7 @@ export const FAQ_ITEMS = [
   {
     question: "Welke diensten biedt GumClean aan?",
     answer:
-      "GumClean biedt drie kerndiensten: het reinigen van winkelpuien en gevels, het reinigen van zonnepanelen, en het milieuvriendelijk verwijderen van kauwgum van bestrating, gevels en entrees.",
+      "GumClean biedt vier kerndiensten: het reinigen van winkelpuien en gevels, het reinigen van zonnepanelen, het milieuvriendelijk verwijderen van kauwgum van bestrating, gevels en entrees, en terreinreiniging met graffitiverwijdering.",
   },
   {
     question: "Hoe snel kan GumClean ter plaatse zijn?",

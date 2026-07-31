@@ -1,6 +1,6 @@
-import { COMPANY, FAQ_ITEMS } from "./constants";
+import { COMPANY } from "./constants";
 
-const SITE = "https://gumclean.nl";
+export const SITE = "https://gumclean.nl";
 
 // Eén @graph dat Organization + LocalBusiness + WebSite + de drie diensten aan
 // elkaar koppelt via @id — de "kennisgraaf" die AI-zoekmachines uitlezen.
@@ -16,7 +16,7 @@ export const siteJsonLd = {
       logo: { "@type": "ImageObject", url: `${SITE}/logo.png` },
       image: `${SITE}/hero-bg.png`,
       description:
-        "Professionele, milieuvriendelijke buitenreiniging voor winkelpuien & gevels, zonnepanelen en kauwgumverwijdering in Hoofddorp en de regio Haarlemmermeer.",
+        "Professionele, milieuvriendelijke buitenreiniging voor winkelpuien & gevels, zonnepanelen, kauwgum- en graffitiverwijdering in Hoofddorp en de regio Haarlemmermeer.",
     },
     {
       "@type": ["LocalBusiness", "ProfessionalService"],
@@ -29,7 +29,7 @@ export const siteJsonLd = {
       image: `${SITE}/hero-bg.png`,
       priceRange: "€€",
       description:
-        "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen reinigen en kauwgumverwijdering in de regio Haarlemmermeer.",
+        "Professionele buitenreiniging voor retail, vastgoed en gemeenten: winkelpuien & gevels, zonnepanelen reinigen, kauwgum- en graffitiverwijdering in de regio Haarlemmermeer.",
       address: {
         "@type": "PostalAddress",
         streetAddress: COMPANY.street,
@@ -91,6 +91,18 @@ export const siteJsonLd = {
             provider: { "@id": `${SITE}/#business` },
           },
         },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Terreinreiniging & graffitiverwijdering",
+            serviceType: "Terreinreiniging en graffitiverwijdering",
+            description:
+              "Professionele reiniging van terreinen, opritten en verhardingen, en verwijdering van graffiti van gevels en muren zonder schade aan de ondergrond.",
+            areaServed: { "@type": "AdministrativeArea", name: "Haarlemmermeer" },
+            provider: { "@id": `${SITE}/#business` },
+          },
+        },
       ],
     },
     {
@@ -104,15 +116,47 @@ export const siteJsonLd = {
   ],
 };
 
-// FAQPage-schema, opgebouwd uit dezelfde FAQ_ITEMS als de zichtbare sectie zodat
-// schema en pagina-inhoud altijd overeenkomen (vereiste van Google/AI-engines).
-export const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "@id": `${SITE}/#faq`,
-  mainEntity: FAQ_ITEMS.map((item) => ({
-    "@type": "Question",
-    name: item.question,
-    acceptedAnswer: { "@type": "Answer", text: item.answer },
-  })),
-};
+// Generieke FAQPage-schema-builder. Geef 'm dezelfde vraag/antwoord-array die
+// ook zichtbaar op de pagina staat, zodat schema en inhoud altijd overeenkomen
+// (vereiste van Google/AI-engines om als bron te mogen dienen).
+export function faqJsonLd(
+  items: readonly { question: string; answer: string }[],
+  id: string
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": `${SITE}/#${id}`,
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  };
+}
+
+// Generieke Service-schema-builder voor dienstpagina's. Koppelt altijd terug
+// aan de bestaande LocalBusiness via provider @id.
+export function serviceJsonLd(opts: {
+  id: string;
+  name: string;
+  serviceType: string;
+  description: string;
+  url: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": `${SITE}/#${opts.id}`,
+    name: opts.name,
+    serviceType: opts.serviceType,
+    description: opts.description,
+    url: `${SITE}${opts.url}`,
+    provider: { "@id": `${SITE}/#business` },
+    areaServed: [
+      { "@type": "AdministrativeArea", name: "Haarlemmermeer" },
+      { "@type": "City", name: "Aalsmeer" },
+      { "@type": "City", name: "Amstelveen" },
+    ],
+  };
+}

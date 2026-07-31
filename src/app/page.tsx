@@ -1,4 +1,3 @@
-import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Diensten from "@/components/Diensten";
 import WaaromGumClean from "@/components/WaaromGumClean";
@@ -11,27 +10,28 @@ import Contract from "@/components/Contract";
 import DemoCTA from "@/components/DemoCTA";
 import FAQ from "@/components/FAQ";
 import OfferteFormulier from "@/components/OfferteFormulier";
-import Footer from "@/components/Footer";
+import { faqJsonLd } from "@/lib/structuredData";
+import { FAQ_ITEMS } from "@/lib/constants";
 
 export default function Home() {
   return (
     <>
-      <Header />
-      <main className="flex-1">
-        <Hero />
-        <Diensten />
-        <WaaromGumClean />
-        <VoorNa />
-        <Klanten />
-        <Doelgroepen />
-        <Zonnepanelen />
-        <Duurzaamheid />
-        <Contract />
-        <DemoCTA />
-        <FAQ />
-        <OfferteFormulier />
-      </main>
-      <Footer />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(FAQ_ITEMS, "faq")) }}
+      />
+      <Hero />
+      <Diensten />
+      <WaaromGumClean />
+      <VoorNa />
+      <Klanten />
+      <Doelgroepen />
+      <Zonnepanelen />
+      <Duurzaamheid />
+      <Contract />
+      <DemoCTA />
+      <FAQ />
+      <OfferteFormulier />
     </>
   );
 }
