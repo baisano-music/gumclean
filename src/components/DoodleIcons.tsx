@@ -143,6 +143,26 @@ export function DoodleBolt({ className = "w-12 h-12" }: { className?: string }) 
   );
 }
 
+export function DoodleSpray({ className = "w-12 h-12" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* can body */}
+      <rect x="30" y="30" width="20" height="36" rx="4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* cap */}
+      <rect x="33" y="20" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      {/* nozzle */}
+      <path d="M40 20 L40 14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      {/* label stripe */}
+      <path d="M30 46 L50 46" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="4 3" opacity="0.5" />
+      {/* spray */}
+      <path d="M52 16 C58 12 62 8 62 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 4" opacity="0.5" />
+      <circle cx="60" cy="14" r="2" fill="currentColor" opacity="0.3" />
+      <circle cx="66" cy="8" r="1.5" fill="currentColor" opacity="0.3" />
+      <path d="M56 24 L68 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 4" opacity="0.4" />
+    </svg>
+  );
+}
+
 // Decorative squiggles / splashes for section backgrounds
 export function DoodleSplash({ className = "w-24 h-24" }: { className?: string }) {
   return (

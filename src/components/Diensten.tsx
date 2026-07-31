@@ -1,5 +1,5 @@
 import { SERVICES } from "@/lib/constants";
-import { DoodleBroom, DoodleBuilding, DoodleSun } from "./DoodleIcons";
+import { DoodleBroom, DoodleBuilding, DoodleSpray, DoodleSun } from "./DoodleIcons";
 
 const colorMap = {
   pink: {
@@ -23,9 +23,16 @@ const colorMap = {
     icon: "text-dark/60",
     chip: "bg-dark/10 text-dark",
   },
+  green: {
+    bg: "bg-green-dark",
+    text: "text-white",
+    desc: "text-white/90",
+    icon: "text-white/80",
+    chip: "bg-white/15 text-white",
+  },
 } as const;
 
-const icons = [DoodleBuilding, DoodleSun, DoodleBroom];
+const icons = [DoodleBuilding, DoodleSun, DoodleBroom, DoodleSpray];
 
 export default function Diensten() {
   return (
@@ -36,28 +43,28 @@ export default function Diensten() {
             Onze diensten
           </span>
           <h2 className="font-[family-name:var(--font-fredoka)] text-4xl sm:text-5xl lg:text-6xl font-bold text-dark">
-            Onze drie kerndiensten
+            Onze kerndiensten
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {SERVICES.map((service, i) => {
             const colors = colorMap[service.color];
             const Icon = icons[i];
             return (
               <div
                 key={service.title}
-                className={`relative ${colors.bg} rounded-[2rem] p-8 sm:p-10 transition-transform hover:scale-[1.04] hover:-translate-y-1 shadow-lg`}
+                className={`relative min-w-0 ${colors.bg} rounded-[2rem] p-6 sm:p-8 transition-transform hover:scale-[1.04] hover:-translate-y-1 shadow-lg`}
               >
                 {service.badge && (
-                  <span className="absolute top-5 right-5 px-3 py-1 rounded-full bg-[#f5a623] text-white text-xs font-bold shadow-sm">
+                  <span className="absolute top-5 right-5 px-3 py-1 rounded-full bg-dark text-white text-xs font-bold shadow-sm">
                     {service.badge}
                   </span>
                 )}
                 <div className={`${colors.icon} mb-6`}>
                   <Icon className="w-16 h-16" />
                 </div>
-                <h3 className={`font-[family-name:var(--font-fredoka)] text-2xl sm:text-3xl font-bold ${colors.text} mb-4`}>
+                <h3 className={`font-[family-name:var(--font-fredoka)] text-xl sm:text-2xl font-bold ${colors.text} mb-4 break-words hyphens-auto`}>
                   {service.title}
                 </h3>
                 <p className={`${colors.desc} leading-relaxed text-base`}>

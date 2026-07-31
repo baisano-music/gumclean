@@ -141,6 +141,7 @@ export default function OfferteFormulier() {
                   <option value="Kauwgumverwijdering">Kauwgumverwijdering</option>
                   <option value="Winkelpui / gevelreiniging">Winkelpui / gevelreiniging</option>
                   <option value="Zonnepanelen reiniging">Zonnepanelen reiniging</option>
+                  <option value="Terreinreiniging / graffitiverwijdering">Terreinreiniging / graffitiverwijdering</option>
                   <option value="Combinatie / meerdere diensten">Combinatie / meerdere diensten</option>
                   <option value="Weet ik nog niet">Weet ik nog niet</option>
                 </select>
