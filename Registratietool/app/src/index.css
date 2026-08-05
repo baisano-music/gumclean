@@ -4,21 +4,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Print-isolatie voor de werkbeschrijving/opleverrapport: alleen het blok met
-   data-print-active="true" komt op papier, de rest van de tool verdwijnt. */
+/* Print-isolatie voor de werkbeschrijving/opleverrapport/offerte: het document
+   wordt via een React-portal buiten #root, direct in <body>, gerenderd. Bij
+   het printen verdwijnt #root in zijn geheel (display: none, dus 0px hoog —
+   geen ruimte meer die de rest van de tool nog inneemt) en verschijnt alleen
+   de portal. De eerdere aanpak verborg de rest van de tool met
+   visibility:hidden, maar die blijft dan wél zijn layout-hoogte innemen —
+   dat gaf tientallen lege pagina's vóór (en na) het eigenlijke document. */
+#print-portal {
+  display: none;
+}
 @media print {
-  body * {
-    visibility: hidden;
+  #root {
+    display: none !important;
   }
-  [data-print-active="true"],
-  [data-print-active="true"] * {
-    visibility: visible;
-  }
-  [data-print-active="true"] {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+  #print-portal {
+    display: block !important;
   }
   /* Zonder dit knipt de browser een foto (of het bijschrift eronder) precies
      op een paginagrens doormidden — dat oogde als "een foto te veel", want de

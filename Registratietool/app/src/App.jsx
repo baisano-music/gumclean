@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Truck, Building2, CheckCircle2, AlertTriangle, Plus, Trash2,
   Clock, Route, Wrench, Package, FileText, Settings, ChevronLeft,
@@ -419,6 +420,15 @@ function FotoUpload({ label, bezig, onFiles }) {
   );
 }
 
+// Rendert children in een portal direct onder <body>, buiten #root — zie de
+// toelichting in index.css bij #print-portal. Zonder dit blijft geprinte
+// content de layout-hoogte van de rest van de (verborgen) app meeslepen,
+// wat als een stapel lege pagina's op papier komt.
+function PrintPortaal({ actief, children }) {
+  if (!actief || typeof document === "undefined") return null;
+  return createPortal(<div id="print-portal">{children}</div>, document.body);
+}
+
 // =================== OVERZICHT ===================
 function Overzicht({ data, setScherm, bewaar }) {
   const totaal = data.panden.reduce((s, p) => s + cijfers(data, p).omzet, 0);
@@ -582,6 +592,118 @@ function KlantScherm({ id, data, wijzigKlant }) {
           </Knop>
         </div>
       </div>
+    </div>
+  );
+}
+
+function WerkbeschrijvingDocument({ p }) {
+  return (
+    <div className="text-sm space-y-3" style={{ color: INK }}>
+      <div>
+        <div className="font-medium" style={{ fontFamily: "Fredoka" }}>{p.naam || "Naamloos pand"}</div>
+        <div style={{ color: "#6B5B7B" }}>{p.adres || "[pandadres ontbreekt]"}</div>
+      </div>
+      <div>
+        <span style={{ color: "#6B5B7B" }}>Melden bij: </span>
+        {p.contactpersoonTerPlaatse || "[nog niet ingevuld]"}
+        {p.telefoonTerPlaatse ? " · " + p.telefoonTerPlaatse : ""}
+      </div>
+      {p.startdatum && (
+        <div><span style={{ color: "#6B5B7B" }}>Startdatum: </span>{datumNL(new Date(p.startdatum + "T00:00:00"))}</div>
+      )}
+      <div>
+        <span style={{ color: "#6B5B7B" }}>Materieel mee: </span>
+        {p.materieel.length ? p.materieel.join(", ") : "[nog niets aangevinkt]"}
+      </div>
+      {p.voorOmschrijving && (
+        <div>
+          <div style={{ color: "#6B5B7B" }}>Algemene omschrijving:</div>
+          <div>{p.voorOmschrijving}</div>
+        </div>
+      )}
+      {p.voorFotos.length > 0 && (
+        <div>
+          <div style={{ color: "#6B5B7B" }} className="mb-1">Foto's van Udo, met omschrijving per foto:</div>
+          <FotoGrid fotos={p.voorFotos} />
+        </div>
+      )}
+      {p.instructies && (
+        <div>
+          <div style={{ color: "#6B5B7B" }}>Overige instructies:</div>
+          <div>{p.instructies}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OpleverrapportDocument({ p, k }) {
+  return (
+    <div className="rounded-xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E4DEE9", fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="flex items-center justify-between mb-6">
+        <img src="/logo.png" alt="GumClean" style={{ height: 32 }} />
+        <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: "#FFE8F3", color: "#CC317B" }}>
+          Opleverrapport
+        </span>
+      </div>
+      <h1 style={{ fontFamily: "Fredoka", fontWeight: 600, fontSize: "1.5rem", color: "#1A0A2E" }}>{p.naam || "Naamloos pand"}</h1>
+      <p style={{ color: "#6B6076" }}>{p.adres}{p.filiaalnummer ? " · filiaalnummer " + p.filiaalnummer : ""}</p>
+      <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm" style={{ color: "#6B6076" }}>
+        <span>Opdrachtgever: {k?.contactpersoon || "—"}</span>
+        {p.afgerondOp && <span style={{ color: "#1E8E5A" }}>Afgerond op {datumNL(new Date(p.afgerondOp + "T00:00:00"))}</span>}
+      </div>
+
+      {p.werkzaamheden && (
+        <div className="mt-5">
+          <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }}>Uitgevoerde werkzaamheden</h2>
+          <p style={{ color: "#1A0A2E" }}>{p.werkzaamheden}</p>
+        </div>
+      )}
+
+      {p.extraWerkzaamheden.length > 0 && (
+        <div className="mt-5">
+          <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }}>Extra uitgevoerd, buiten de offerte</h2>
+          <ul style={{ color: "#1A0A2E" }}>
+            {p.extraWerkzaamheden.map((x, i) => (
+              <li key={i}>{x.omschrijving}{num(x.bedrag) > 0 ? " — " + eur(x.bedrag) + " excl. btw" : ""}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {(p.voorFotos.length > 0 || p.naFotos.length > 0) && (
+        <div className="mt-5">
+          <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }} className="mb-2">Voor en na</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {Array.from({ length: Math.max(p.voorFotos.length, p.naFotos.length) }).map((_, i) => (
+              <React.Fragment key={i}>
+                <div className="print-avoid-break">
+                  {p.voorFotos[i] && (
+                    <img src={"/api/fotos?pad=" + encodeURIComponent(p.voorFotos[i].pathname)} alt="voor"
+                      className="w-full aspect-square object-cover" style={{ borderRadius: 20, boxShadow: "0 1px 2px rgba(26,10,46,.06)" }} />
+                  )}
+                  <p className="text-xs mt-1 text-center" style={{ color: "#6B6076" }}>
+                    voor{p.voorFotos[i]?.omschrijving ? " — " + p.voorFotos[i].omschrijving : ""}
+                  </p>
+                </div>
+                <div className="print-avoid-break">
+                  {p.naFotos[i] && (
+                    <img src={"/api/fotos?pad=" + encodeURIComponent(p.naFotos[i].pathname)} alt="na"
+                      className="w-full aspect-square object-cover" style={{ borderRadius: 20, boxShadow: "0 1px 2px rgba(26,10,46,.06)" }} />
+                  )}
+                  <p className="text-xs mt-1 text-center" style={{ color: "#6B6076" }}>
+                    na{p.naFotos[i]?.omschrijving ? " — " + p.naFotos[i].omschrijving : ""}
+                  </p>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="text-xs mt-8 pt-3" style={{ color: "#6B6076", borderTop: "1px solid #E4DEE9" }}>
+        Antoni Hristov · gumclean.nl · 06 4221 0739 · info@gumclean.nl · KvK 42082782
+      </p>
     </div>
   );
 }
@@ -1130,43 +1252,9 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
             <Knop variant="wit" klein onClick={() => setPrintKaart("werk")}>Print / naar Anton appen</Knop>
           </span>
         </div>
-        <div data-print-active={printKaart === "werk"} className="text-sm space-y-3" style={{ color: INK }}>
-          <div>
-            <div className="font-medium" style={{ fontFamily: "Fredoka" }}>{p.naam || "Naamloos pand"}</div>
-            <div style={{ color: "#6B5B7B" }}>{p.adres || "[pandadres ontbreekt]"}</div>
-          </div>
-          <div>
-            <span style={{ color: "#6B5B7B" }}>Melden bij: </span>
-            {p.contactpersoonTerPlaatse || "[nog niet ingevuld]"}
-            {p.telefoonTerPlaatse ? " · " + p.telefoonTerPlaatse : ""}
-          </div>
-          {p.startdatum && (
-            <div><span style={{ color: "#6B5B7B" }}>Startdatum: </span>{datumNL(new Date(p.startdatum + "T00:00:00"))}</div>
-          )}
-          <div>
-            <span style={{ color: "#6B5B7B" }}>Materieel mee: </span>
-            {p.materieel.length ? p.materieel.join(", ") : "[nog niets aangevinkt]"}
-          </div>
-          {p.voorOmschrijving && (
-            <div>
-              <div style={{ color: "#6B5B7B" }}>Algemene omschrijving:</div>
-              <div>{p.voorOmschrijving}</div>
-            </div>
-          )}
-          {p.voorFotos.length > 0 && (
-            <div>
-              <div style={{ color: "#6B5B7B" }} className="mb-1">Foto's van Udo, met omschrijving per foto:</div>
-              <FotoGrid fotos={p.voorFotos} />
-            </div>
-          )}
-          {p.instructies && (
-            <div>
-              <div style={{ color: "#6B5B7B" }}>Overige instructies:</div>
-              <div>{p.instructies}</div>
-            </div>
-          )}
-        </div>
+        <WerkbeschrijvingDocument p={p} />
       </Kaart>
+      <PrintPortaal actief={printKaart === "werk"}><WerkbeschrijvingDocument p={p} /></PrintPortaal>
 
       {/* Opleverrapport voor de klant, in GumClean-huisstijl (design system v2) */}
       <Kaart className="overflow-hidden">
@@ -1177,74 +1265,9 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
             <Knop variant="wit" klein onClick={() => setPrintKaart("oplever")}>Print / opslaan als pdf</Knop>
           </span>
         </div>
-        <div data-print-active={printKaart === "oplever"} className="rounded-xl p-6"
-          style={{ background: "#FFFFFF", border: "1px solid #E4DEE9", fontFamily: "'DM Sans', sans-serif" }}>
-          <div className="flex items-center justify-between mb-6">
-            <img src="/logo.png" alt="GumClean" style={{ height: 32 }} />
-            <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: "#FFE8F3", color: "#CC317B" }}>
-              Opleverrapport
-            </span>
-          </div>
-          <h1 style={{ fontFamily: "Fredoka", fontWeight: 600, fontSize: "1.5rem", color: "#1A0A2E" }}>{p.naam || "Naamloos pand"}</h1>
-          <p style={{ color: "#6B6076" }}>{p.adres}{p.filiaalnummer ? " · filiaalnummer " + p.filiaalnummer : ""}</p>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm" style={{ color: "#6B6076" }}>
-            <span>Opdrachtgever: {k?.contactpersoon || "—"}</span>
-            {p.afgerondOp && <span style={{ color: "#1E8E5A" }}>Afgerond op {datumNL(new Date(p.afgerondOp + "T00:00:00"))}</span>}
-          </div>
-
-          {p.werkzaamheden && (
-            <div className="mt-5">
-              <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }}>Uitgevoerde werkzaamheden</h2>
-              <p style={{ color: "#1A0A2E" }}>{p.werkzaamheden}</p>
-            </div>
-          )}
-
-          {p.extraWerkzaamheden.length > 0 && (
-            <div className="mt-5">
-              <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }}>Extra uitgevoerd, buiten de offerte</h2>
-              <ul style={{ color: "#1A0A2E" }}>
-                {p.extraWerkzaamheden.map((x, i) => (
-                  <li key={i}>{x.omschrijving}{num(x.bedrag) > 0 ? " — " + eur(x.bedrag) + " excl. btw" : ""}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {(p.voorFotos.length > 0 || p.naFotos.length > 0) && (
-            <div className="mt-5">
-              <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }} className="mb-2">Voor en na</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {Array.from({ length: Math.max(p.voorFotos.length, p.naFotos.length) }).map((_, i) => (
-                  <React.Fragment key={i}>
-                    <div className="print-avoid-break">
-                      {p.voorFotos[i] && (
-                        <img src={"/api/fotos?pad=" + encodeURIComponent(p.voorFotos[i].pathname)} alt="voor"
-                          className="w-full aspect-square object-cover" style={{ borderRadius: 20, boxShadow: "0 1px 2px rgba(26,10,46,.06)" }} />
-                      )}
-                      <p className="text-xs mt-1 text-center" style={{ color: "#6B6076" }}>
-                        voor{p.voorFotos[i]?.omschrijving ? " — " + p.voorFotos[i].omschrijving : ""}
-                      </p>
-                    </div>
-                    <div className="print-avoid-break">
-                      {p.naFotos[i] && (
-                        <img src={"/api/fotos?pad=" + encodeURIComponent(p.naFotos[i].pathname)} alt="na"
-                          className="w-full aspect-square object-cover" style={{ borderRadius: 20, boxShadow: "0 1px 2px rgba(26,10,46,.06)" }} />
-                      )}
-                      <p className="text-xs mt-1 text-center" style={{ color: "#6B6076" }}>
-                        na{p.naFotos[i]?.omschrijving ? " — " + p.naFotos[i].omschrijving : ""}
-                      </p>
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <p className="text-xs mt-8 pt-3" style={{ color: "#6B6076", borderTop: "1px solid #E4DEE9" }}>
-            Antoni Hristov · gumclean.nl · 06 4221 0739 · info@gumclean.nl · KvK 42082782
-          </p>
-        </div>
+        <OpleverrapportDocument p={p} k={k} />
       </Kaart>
+      <PrintPortaal actief={printKaart === "oplever"}><OpleverrapportDocument p={p} k={k} /></PrintPortaal>
 
       <Knop variant="wit" onClick={() => {
         bewaar({ ...data, panden: data.panden.filter((x) => x.id !== p.id) });
@@ -1333,6 +1356,178 @@ function OfferteSectie({ nummer, titel, children }) {
 // Meerdere regels tekst, gescheiden door een lege regel of \n, als losse <p>'s.
 function TekstBlok({ tekst }) {
   return tekst.split("\n").filter(Boolean).map((regel, i) => <p key={i} className="mb-1">{regel}</p>);
+}
+
+function OfferteDocument({ o, k, data, nrs, totaalMeerderePanden, onderhoudTotaal, totaalSpoedopdracht }) {
+  return (
+    <div className="rounded-xl p-8" style={{ background: "#FFFFFF", border: "1px solid #E4DEE9", fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="flex items-center justify-between mb-6">
+        <img src="/logo.png" alt="GumClean" style={{ height: 32 }} />
+        <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: "#FFE8F3", color: "#CC317B" }}>
+          OFFERTE · {o.offertenummer || "(nummer)"}
+        </span>
+      </div>
+      <h1 style={{ fontFamily: "Fredoka", fontWeight: 600, fontSize: "1.5rem", color: "#1A0A2E" }}>
+        {o.titel || (o.type === "spoedopdracht" ? "Spoedopdracht" : "0-beurt")}
+      </h1>
+      {o.samenvatting && <p style={{ color: "#6B6076" }}>{o.samenvatting}</p>}
+
+      <div className="grid grid-cols-2 gap-6 mt-5 text-sm" style={{ color: "#1A0A2E" }}>
+        <div>
+          <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Van</p>
+          <p style={{ fontWeight: 600 }}>GumClean</p>
+          <p>Antoni Hristov</p>
+          <p>{data.instellingen.thuisadres}</p>
+          <p>KvK 42082782 · 06 4221 0739</p>
+          <p>info@gumclean.nl</p>
+        </div>
+        <div>
+          <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Voor</p>
+          <p style={{ fontWeight: 600 }}>{o.voorNaam || k?.naam || "—"}</p>
+          {o.voorTav && <p>{o.voorTav}</p>}
+          {o.voorAdres && <p style={{ whiteSpace: "pre-line" }}>{o.voorAdres}</p>}
+          <p className="mt-2">Offertenummer {o.offertenummer || "—"}</p>
+          <p>Datum {o.datum ? datumNL(new Date(o.datum + "T00:00:00")) : "—"} · Geldig {o.geldigDagen} dagen</p>
+        </div>
+      </div>
+
+      {o.aanhef && <p className="mt-5" style={{ color: "#1A0A2E" }}>Geachte {o.aanhef}</p>}
+      {o.inleiding && <div className="mt-2"><TekstBlok tekst={o.inleiding} /></div>}
+
+      {o.type === "meerdere-panden" ? (
+        <>
+          <div className="mt-5"><OfferteSectie nummer={nrs.werkwijze} titel="Onze werkwijze"><TekstBlok tekst={o.werkwijze} /></OfferteSectie></div>
+          <OfferteSectie nummer={nrs.prijs} titel="Prijs per pand, 0-beurt">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "#FAF7FB" }}>
+                    <th className="text-left px-3 py-2 font-medium">Pand</th>
+                    <th className="text-right px-3 py-2 font-medium">Mandagen</th>
+                    <th className="text-left px-3 py-2 font-medium">Hoogwerker</th>
+                    <th className="text-right px-3 py-2 font-medium">0-beurt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {o.regels.map((r, i) => (
+                    <tr key={i} style={{ borderBottom: "1px solid #E4DEE9" }}>
+                      <td className="px-3 py-2">{r.naam}</td>
+                      <td className="text-right px-3 py-2">{r.mandagen}</td>
+                      <td className="px-3 py-2" style={r.hoogwerker ? { fontWeight: 600, color: "#B45309" } : {}}>{r.hoogwerker ? "Ja" : "Nee"}</td>
+                      <td className="text-right px-3 py-2">{eur0(r.prijs)}</td>
+                    </tr>
+                  ))}
+                  <tr style={{ borderTop: "1.5px solid #E4DEE9" }}>
+                    <td className="px-3 py-2" style={{ fontWeight: 600 }}>Totaal 0-beurt ({o.regels.length} panden)</td>
+                    <td className="text-right px-3 py-2" style={{ fontWeight: 600 }}>{o.regels.reduce((s, r) => s + num(r.mandagen), 0)}</td>
+                    <td></td>
+                    <td className="text-right px-3 py-2" style={{ fontWeight: 600 }}>{eur0(totaalMeerderePanden)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs mt-2" style={{ color: "#6B6076" }}>Alle bedragen exclusief btw.</p>
+          </OfferteSectie>
+          {o.onderhoudContract && (
+            <OfferteSectie nummer={nrs.onderhoud} titel="Optioneel: onderhoudscontract">
+              <p>Na de 0-beurt is elk pand schoon. Met periodiek onderhoud houdt u dat resultaat vast tegen
+                een lager tarief van {data.instellingen.onderhoudsPercentage ?? 60}% van de 0-beurt per ronde.</p>
+              <p className="mt-2" style={{ fontWeight: 600 }}>Onderhoudsronde: {eur0(onderhoudTotaal)} excl. btw</p>
+            </OfferteSectie>
+          )}
+          {o.lichtreclameOptie && (
+            <OfferteSectie nummer={nrs.lichtreclame} titel="Optie: lichtreclame reinigen">
+              <p>Het reinigen van de lichtreclame nemen wij graag mee tijdens de beurt, voor {eur(o.lichtreclamePrijsPerPand)} per
+                pand per keer (excl. btw). U kiest zelf of u deze optie afneemt.</p>
+            </OfferteSectie>
+          )}
+          <OfferteSectie nummer={nrs.watUKrijgt} titel="Wat u van ons krijgt">
+            <ul className="list-disc pl-4">
+              {o.watUKrijgt.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}
+            </ul>
+          </OfferteSectie>
+        </>
+      ) : (
+        <>
+          {o.situatie && (
+            <OfferteSectie nummer={nrs.situatie} titel="De situatie">
+              <ul className="list-disc pl-4">{o.situatie.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}</ul>
+            </OfferteSectie>
+          )}
+          {o.aanpak && (
+            <OfferteSectie nummer={nrs.aanpak} titel="Onze aanpak">
+              <ol className="list-decimal pl-4">{o.aanpak.split("\n").filter(Boolean).map((r, i) => <li key={i} className="mb-1">{r}</li>)}</ol>
+            </OfferteSectie>
+          )}
+          {o.risicos && (
+            <OfferteSectie nummer={nrs.risicos} titel="Waar wij rekening mee houden">
+              <ul className="list-disc pl-4">{o.risicos.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}</ul>
+            </OfferteSectie>
+          )}
+          <OfferteSectie nummer={nrs.prijs} titel="Prijs">
+            <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+              <tbody>
+                {o.prijsregels.map((x, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #E4DEE9" }}>
+                    <td className="px-3 py-2">{x.omschrijving}</td>
+                    <td className="text-right px-3 py-2">{eur(x.bedrag)}</td>
+                  </tr>
+                ))}
+                {num(o.voorrijkosten) > 0 && (
+                  <tr style={{ borderBottom: "1px solid #E4DEE9" }}>
+                    <td className="px-3 py-2">Voorrijkosten</td>
+                    <td className="text-right px-3 py-2">{eur(o.voorrijkosten)}</td>
+                  </tr>
+                )}
+                <tr>
+                  <td className="px-3 py-2" style={{ fontWeight: 600 }}>Totaal, excl. btw</td>
+                  <td className="text-right px-3 py-2" style={{ fontWeight: 600 }}>{eur(totaalSpoedopdracht)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </OfferteSectie>
+          {o.praktisch && (
+            <OfferteSectie nummer={nrs.praktisch} titel="Praktisch">
+              <ul className="list-disc pl-4">{o.praktisch.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}</ul>
+            </OfferteSectie>
+          )}
+        </>
+      )}
+
+      <OfferteSectie nummer={nrs.voorwaarden} titel="Voorwaarden">
+        <ul className="list-disc pl-4">
+          {o.voorwaarden.replace("{geldigDagen}", o.geldigDagen).split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}
+        </ul>
+      </OfferteSectie>
+
+      <OfferteSectie nummer={nrs.akkoord} titel="Akkoord">
+        <p className="mb-3">Gaat u akkoord? Bel of mail gerust bij vragen.</p>
+        {o.type === "meerdere-panden" ? (
+          <div className="space-y-1">
+            <p>☐ 0-beurt, {o.regels.length} panden ({eur0(totaalMeerderePanden)} excl. btw)</p>
+            {o.onderhoudContract && <p>☐ Optioneel onderhoudscontract ({eur0(onderhoudTotaal)} per ronde excl. btw)</p>}
+            {o.lichtreclameOptie && <p>☐ Optie lichtreclame reinigen ({eur(o.lichtreclamePrijsPerPand)} per pand per keer)</p>}
+          </div>
+        ) : (
+          <p>☐ Akkoord, totaal {eur(totaalSpoedopdracht)} excl. btw</p>
+        )}
+        <div className="grid grid-cols-2 gap-6 mt-5 text-sm">
+          <div>
+            <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Namens {o.voorNaam || k?.naam || "de klant"}</p>
+            <p>Naam:</p><p>Datum:</p><p>Handtekening:</p>
+          </div>
+          <div>
+            <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Namens GumClean</p>
+            <p>Naam: Antoni Hristov</p><p>Datum:</p><p>Handtekening:</p>
+          </div>
+        </div>
+      </OfferteSectie>
+
+      <p className="text-xs mt-8 pt-3" style={{ color: "#6B6076", borderTop: "1px solid #E4DEE9" }}>
+        Antoni Hristov · gumclean.nl · 06 4221 0739 · info@gumclean.nl · KvK 42082782
+      </p>
+    </div>
+  );
 }
 
 function OfferteScherm({ id, data, wijzigOfferte, bewaar, setScherm }) {
@@ -1534,175 +1729,13 @@ function OfferteScherm({ id, data, wijzigOfferte, bewaar, setScherm }) {
             <Knop variant="wit" klein onClick={() => setPrintActief(true)}>Print / opslaan als pdf</Knop>
           </span>
         </div>
-        <div data-print-active={printActief} className="rounded-xl p-8"
-          style={{ background: "#FFFFFF", border: "1px solid #E4DEE9", fontFamily: "'DM Sans', sans-serif" }}>
-          <div className="flex items-center justify-between mb-6">
-            <img src="/logo.png" alt="GumClean" style={{ height: 32 }} />
-            <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: "#FFE8F3", color: "#CC317B" }}>
-              OFFERTE · {o.offertenummer || "(nummer)"}
-            </span>
-          </div>
-          <h1 style={{ fontFamily: "Fredoka", fontWeight: 600, fontSize: "1.5rem", color: "#1A0A2E" }}>
-            {o.titel || (o.type === "spoedopdracht" ? "Spoedopdracht" : "0-beurt")}
-          </h1>
-          {o.samenvatting && <p style={{ color: "#6B6076" }}>{o.samenvatting}</p>}
-
-          <div className="grid grid-cols-2 gap-6 mt-5 text-sm" style={{ color: "#1A0A2E" }}>
-            <div>
-              <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Van</p>
-              <p style={{ fontWeight: 600 }}>GumClean</p>
-              <p>Antoni Hristov</p>
-              <p>{data.instellingen.thuisadres}</p>
-              <p>KvK 42082782 · 06 4221 0739</p>
-              <p>info@gumclean.nl</p>
-            </div>
-            <div>
-              <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Voor</p>
-              <p style={{ fontWeight: 600 }}>{o.voorNaam || k?.naam || "—"}</p>
-              {o.voorTav && <p>{o.voorTav}</p>}
-              {o.voorAdres && <p style={{ whiteSpace: "pre-line" }}>{o.voorAdres}</p>}
-              <p className="mt-2">Offertenummer {o.offertenummer || "—"}</p>
-              <p>Datum {o.datum ? datumNL(new Date(o.datum + "T00:00:00")) : "—"} · Geldig {o.geldigDagen} dagen</p>
-            </div>
-          </div>
-
-          {o.aanhef && <p className="mt-5" style={{ color: "#1A0A2E" }}>Geachte {o.aanhef}</p>}
-          {o.inleiding && <div className="mt-2"><TekstBlok tekst={o.inleiding} /></div>}
-
-          {o.type === "meerdere-panden" ? (
-            <>
-              <div className="mt-5"><OfferteSectie nummer={nrs.werkwijze} titel="Onze werkwijze"><TekstBlok tekst={o.werkwijze} /></OfferteSectie></div>
-              <OfferteSectie nummer={nrs.prijs} titel="Prijs per pand, 0-beurt">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr style={{ background: "#FAF7FB" }}>
-                        <th className="text-left px-3 py-2 font-medium">Pand</th>
-                        <th className="text-right px-3 py-2 font-medium">Mandagen</th>
-                        <th className="text-left px-3 py-2 font-medium">Hoogwerker</th>
-                        <th className="text-right px-3 py-2 font-medium">0-beurt</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {o.regels.map((r, i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid #E4DEE9" }}>
-                          <td className="px-3 py-2">{r.naam}</td>
-                          <td className="text-right px-3 py-2">{r.mandagen}</td>
-                          <td className="px-3 py-2" style={r.hoogwerker ? { fontWeight: 600, color: "#B45309" } : {}}>{r.hoogwerker ? "Ja" : "Nee"}</td>
-                          <td className="text-right px-3 py-2">{eur0(r.prijs)}</td>
-                        </tr>
-                      ))}
-                      <tr style={{ borderTop: "1.5px solid #E4DEE9" }}>
-                        <td className="px-3 py-2" style={{ fontWeight: 600 }}>Totaal 0-beurt ({o.regels.length} panden)</td>
-                        <td className="text-right px-3 py-2" style={{ fontWeight: 600 }}>{o.regels.reduce((s, r) => s + num(r.mandagen), 0)}</td>
-                        <td></td>
-                        <td className="text-right px-3 py-2" style={{ fontWeight: 600 }}>{eur0(totaalMeerderePanden)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <p className="text-xs mt-2" style={{ color: "#6B6076" }}>Alle bedragen exclusief btw.</p>
-              </OfferteSectie>
-              {o.onderhoudContract && (
-                <OfferteSectie nummer={nrs.onderhoud} titel="Optioneel: onderhoudscontract">
-                  <p>Na de 0-beurt is elk pand schoon. Met periodiek onderhoud houdt u dat resultaat vast tegen
-                    een lager tarief van {data.instellingen.onderhoudsPercentage ?? 60}% van de 0-beurt per ronde.</p>
-                  <p className="mt-2" style={{ fontWeight: 600 }}>Onderhoudsronde: {eur0(onderhoudTotaal)} excl. btw</p>
-                </OfferteSectie>
-              )}
-              {o.lichtreclameOptie && (
-                <OfferteSectie nummer={nrs.lichtreclame} titel="Optie: lichtreclame reinigen">
-                  <p>Het reinigen van de lichtreclame nemen wij graag mee tijdens de beurt, voor {eur(o.lichtreclamePrijsPerPand)} per
-                    pand per keer (excl. btw). U kiest zelf of u deze optie afneemt.</p>
-                </OfferteSectie>
-              )}
-              <OfferteSectie nummer={nrs.watUKrijgt} titel="Wat u van ons krijgt">
-                <ul className="list-disc pl-4">
-                  {o.watUKrijgt.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}
-                </ul>
-              </OfferteSectie>
-            </>
-          ) : (
-            <>
-              {o.situatie && (
-                <OfferteSectie nummer={nrs.situatie} titel="De situatie">
-                  <ul className="list-disc pl-4">{o.situatie.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}</ul>
-                </OfferteSectie>
-              )}
-              {o.aanpak && (
-                <OfferteSectie nummer={nrs.aanpak} titel="Onze aanpak">
-                  <ol className="list-decimal pl-4">{o.aanpak.split("\n").filter(Boolean).map((r, i) => <li key={i} className="mb-1">{r}</li>)}</ol>
-                </OfferteSectie>
-              )}
-              {o.risicos && (
-                <OfferteSectie nummer={nrs.risicos} titel="Waar wij rekening mee houden">
-                  <ul className="list-disc pl-4">{o.risicos.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}</ul>
-                </OfferteSectie>
-              )}
-              <OfferteSectie nummer={nrs.prijs} titel="Prijs">
-                <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
-                  <tbody>
-                    {o.prijsregels.map((x, i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid #E4DEE9" }}>
-                        <td className="px-3 py-2">{x.omschrijving}</td>
-                        <td className="text-right px-3 py-2">{eur(x.bedrag)}</td>
-                      </tr>
-                    ))}
-                    {num(o.voorrijkosten) > 0 && (
-                      <tr style={{ borderBottom: "1px solid #E4DEE9" }}>
-                        <td className="px-3 py-2">Voorrijkosten</td>
-                        <td className="text-right px-3 py-2">{eur(o.voorrijkosten)}</td>
-                      </tr>
-                    )}
-                    <tr>
-                      <td className="px-3 py-2" style={{ fontWeight: 600 }}>Totaal, excl. btw</td>
-                      <td className="text-right px-3 py-2" style={{ fontWeight: 600 }}>{eur(totaalSpoedopdracht)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </OfferteSectie>
-              {o.praktisch && (
-                <OfferteSectie nummer={nrs.praktisch} titel="Praktisch">
-                  <ul className="list-disc pl-4">{o.praktisch.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}</ul>
-                </OfferteSectie>
-              )}
-            </>
-          )}
-
-          <OfferteSectie nummer={nrs.voorwaarden} titel="Voorwaarden">
-            <ul className="list-disc pl-4">
-              {o.voorwaarden.replace("{geldigDagen}", o.geldigDagen).split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}
-            </ul>
-          </OfferteSectie>
-
-          <OfferteSectie nummer={nrs.akkoord} titel="Akkoord">
-            <p className="mb-3">Gaat u akkoord? Bel of mail gerust bij vragen.</p>
-            {o.type === "meerdere-panden" ? (
-              <div className="space-y-1">
-                <p>☐ 0-beurt, {o.regels.length} panden ({eur0(totaalMeerderePanden)} excl. btw)</p>
-                {o.onderhoudContract && <p>☐ Optioneel onderhoudscontract ({eur0(onderhoudTotaal)} per ronde excl. btw)</p>}
-                {o.lichtreclameOptie && <p>☐ Optie lichtreclame reinigen ({eur(o.lichtreclamePrijsPerPand)} per pand per keer)</p>}
-              </div>
-            ) : (
-              <p>☐ Akkoord, totaal {eur(totaalSpoedopdracht)} excl. btw</p>
-            )}
-            <div className="grid grid-cols-2 gap-6 mt-5 text-sm">
-              <div>
-                <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Namens {o.voorNaam || k?.naam || "de klant"}</p>
-                <p>Naam:</p><p>Datum:</p><p>Handtekening:</p>
-              </div>
-              <div>
-                <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Namens GumClean</p>
-                <p>Naam: Antoni Hristov</p><p>Datum:</p><p>Handtekening:</p>
-              </div>
-            </div>
-          </OfferteSectie>
-
-          <p className="text-xs mt-8 pt-3" style={{ color: "#6B6076", borderTop: "1px solid #E4DEE9" }}>
-            Antoni Hristov · gumclean.nl · 06 4221 0739 · info@gumclean.nl · KvK 42082782
-          </p>
-        </div>
+        <OfferteDocument o={o} k={k} data={data} nrs={nrs}
+          totaalMeerderePanden={totaalMeerderePanden} onderhoudTotaal={onderhoudTotaal} totaalSpoedopdracht={totaalSpoedopdracht} />
       </Kaart>
+      <PrintPortaal actief={printActief}>
+        <OfferteDocument o={o} k={k} data={data} nrs={nrs}
+          totaalMeerderePanden={totaalMeerderePanden} onderhoudTotaal={onderhoudTotaal} totaalSpoedopdracht={totaalSpoedopdracht} />
+      </PrintPortaal>
 
       <Knop variant="wit" onClick={() => {
         bewaar({ ...data, offertes: data.offertes.filter((x) => x.id !== o.id) });

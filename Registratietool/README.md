@@ -293,10 +293,21 @@ het beveiligingsoppervlak klein.
   en "na" als zichtbare tekstlabels, niet alleen visueel naast elkaar gezet.
   Sluit af met de voetregel-indeling uit het design system (§5).
 
-Beide printen via `window.print()`, met een CSS-regel in `index.css`
-(`[data-print-active="true"]`) die de rest van de pagina onzichtbaar maakt
-zodat alleen het aangeklikte document op papier (of in de "opslaan als pdf"-
-dialoog) komt.
+Beide printen via `window.print()` en een `PrintPortaal`-component: het
+document wordt via `createPortal` (react-dom) direct in `<body>` gerenderd,
+buiten `#root`. In print media (`index.css`) krijgt `#root` `display: none`
+en de portal `display: block`. **Bewust niet** de gebruikelijkere
+`visibility: hidden` op `body *`-truc — die verbergt de rest van de tool wel
+optisch, maar laat 'm zijn layout-hoogte behouden, en de browser paginate't
+nog steeds over die volledige (onzichtbare) hoogte. Bij een tool met veel
+Kaart-secties gaf dat tientallen lege pagina's vóór en na het eigenlijke
+document. Met `display: none` op `#root` bestaat die hoogte niet meer.
+
+De drie printbare documenten staan als losse componenten
+(`WerkbeschrijvingDocument`, `OpleverrapportDocument`, `OfferteDocument`),
+elk twee keer gerenderd: één keer gewoon inline in de Kaart (voor de
+live-preview op het scherm) en één keer in de `PrintPortaal` (voor het
+printmoment) — dezelfde JSX, geen duplicatie van de opmaak zelf.
 
 ## Offertes
 
@@ -338,8 +349,8 @@ prijstabel-conventies uit §5 (header-rij lichte achtergrond, hoogwerker "Ja"
 vet + `semantic/warning`-kleur, bedragen rechts uitgelijnd, altijd "excl.
 btw"). Akkoordblok met ☐-checkboxes en een handtekeningvak per partij, net
 als in de Word-versie — maar puur getypte tekst/print, geen digitale
-handtekening. Print/pdf-export via hetzelfde `data-print-active`-mechanisme
-als het opleverrapport.
+handtekening. Print/pdf-export via dezelfde `PrintPortaal` als het
+opleverrapport.
 
 ## Startdata
 
