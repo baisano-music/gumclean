@@ -376,7 +376,7 @@ function Kaart({ children, className = "" }) {
 // laden van <img>. Zonder onVerwijder/onOmschrijving is de grid read-only
 // (voor in de werkbeschrijving-preview); de omschrijving staat er dan als
 // platte tekst i.p.v. een invoerveld.
-function FotoGrid({ fotos, onVerwijder, onOmschrijving }) {
+function FotoGrid({ fotos, onVerwijder, onOmschrijving, koppelOpties, onKoppel }) {
   if (!fotos.length) return null;
   return (
     <div className="grid grid-cols-3 gap-2 mt-2">
@@ -399,6 +399,16 @@ function FotoGrid({ fotos, onVerwijder, onOmschrijving }) {
           ) : f.omschrijving ? (
             <p className="text-xs mt-1" style={{ color: "#6B5B7B" }}>{f.omschrijving}</p>
           ) : null}
+          {koppelOpties && (
+            <select value={f.voorFotoId ?? ""} onChange={(e) => onKoppel(f, e.target.value)}
+              className="w-full mt-1 px-1 py-1 rounded text-xs outline-none border"
+              style={{ borderColor: "#E4DCEA", background: "white", color: INK }}>
+              <option value="">Los, geen voor-foto</option>
+              {koppelOpties.map((v, i) => (
+                <option key={v.id} value={v.id}>Hoort bij: {v.omschrijving || "voor-foto " + (i + 1)}</option>
+              ))}
+            </select>
+          )}
         </div>
       ))}
     </div>
@@ -637,6 +647,18 @@ function WerkbeschrijvingDocument({ p }) {
   );
 }
 
+function FotoCel({ foto, label }) {
+  return (
+    <div className="print-avoid-break">
+      <img src={"/api/fotos?pad=" + encodeURIComponent(foto.pathname)} alt={label}
+        className="w-full aspect-square object-cover" style={{ borderRadius: 20, boxShadow: "0 1px 2px rgba(26,10,46,.06)" }} />
+      <p className="text-xs mt-1 text-center" style={{ color: "#6B6076" }}>
+        {label}{foto.omschrijving ? " — " + foto.omschrijving : ""}
+      </p>
+    </div>
+  );
+}
+
 function OpleverrapportDocument({ p, k }) {
   return (
     <div className="rounded-xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E4DEE9", fontFamily: "'DM Sans', sans-serif" }}>
@@ -671,35 +693,35 @@ function OpleverrapportDocument({ p, k }) {
         </div>
       )}
 
-      {(p.voorFotos.length > 0 || p.naFotos.length > 0) && (
-        <div className="mt-5">
-          <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }} className="mb-2">Voor en na</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {Array.from({ length: Math.max(p.voorFotos.length, p.naFotos.length) }).map((_, i) => (
-              <React.Fragment key={i}>
-                <div className="print-avoid-break">
-                  {p.voorFotos[i] && (
-                    <img src={"/api/fotos?pad=" + encodeURIComponent(p.voorFotos[i].pathname)} alt="voor"
-                      className="w-full aspect-square object-cover" style={{ borderRadius: 20, boxShadow: "0 1px 2px rgba(26,10,46,.06)" }} />
-                  )}
-                  <p className="text-xs mt-1 text-center" style={{ color: "#6B6076" }}>
-                    voor{p.voorFotos[i]?.omschrijving ? " — " + p.voorFotos[i].omschrijving : ""}
-                  </p>
-                </div>
-                <div className="print-avoid-break">
-                  {p.naFotos[i] && (
-                    <img src={"/api/fotos?pad=" + encodeURIComponent(p.naFotos[i].pathname)} alt="na"
-                      className="w-full aspect-square object-cover" style={{ borderRadius: 20, boxShadow: "0 1px 2px rgba(26,10,46,.06)" }} />
-                  )}
-                  <p className="text-xs mt-1 text-center" style={{ color: "#6B6076" }}>
-                    na{p.naFotos[i]?.omschrijving ? " — " + p.naFotos[i].omschrijving : ""}
-                  </p>
-                </div>
-              </React.Fragment>
-            ))}
+      {(() => {
+        // Koppeling is expliciet (na.voorFotoId), niet op uploadvolgorde —
+        // anders staan foto's willekeurig naast elkaar zodra de aantallen
+        // niet gelijk zijn (bijna altijd het geval: Anton stuurt meestal
+        // meer na-foto's dan Udo voor-foto's stuurde).
+        const gekoppeld = p.naFotos.filter((n) => n.voorFotoId && p.voorFotos.some((v) => v.id === n.voorFotoId));
+        const naLos = p.naFotos.filter((n) => !gekoppeld.includes(n));
+        const gekoppeldeVoorIds = new Set(gekoppeld.map((n) => n.voorFotoId));
+        const voorLos = p.voorFotos.filter((v) => !gekoppeldeVoorIds.has(v.id));
+        if (gekoppeld.length === 0 && naLos.length === 0 && voorLos.length === 0) return null;
+        return (
+          <div className="mt-5">
+            <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }} className="mb-2">Voor en na</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {gekoppeld.map((n) => {
+                const v = p.voorFotos.find((vv) => vv.id === n.voorFotoId);
+                return (
+                  <React.Fragment key={n.id}>
+                    <FotoCel foto={v} label="voor" />
+                    <FotoCel foto={n} label="na" />
+                  </React.Fragment>
+                );
+              })}
+              {voorLos.map((v) => <FotoCel key={v.id} foto={v} label="voor" />)}
+              {naLos.map((n) => <FotoCel key={n.id} foto={n} label="na" />)}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <p className="text-xs mt-8 pt-3" style={{ color: "#6B6076", borderTop: "1px solid #E4DEE9" }}>
         Antoni Hristov · gumclean.nl · 06 4221 0739 · info@gumclean.nl · KvK 42082782
@@ -745,7 +767,7 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
         const res = await fetch("/api/fotos?pandId=" + p.id + "&type=" + type, {
           method: "POST", headers: { "Content-Type": "image/jpeg" }, body: blob,
         });
-        if (res.ok) nieuw.push({ id: crypto.randomUUID(), pathname: (await res.json()).pathname, omschrijving: "" });
+        if (res.ok) nieuw.push({ id: crypto.randomUUID(), pathname: (await res.json()).pathname, omschrijving: "", voorFotoId: "" });
       }
     } finally {
       setUploadBezig(false);
@@ -761,6 +783,11 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
     const veld = type === "voor" ? "voorFotos" : "naFotos";
     wijzigPand(p.id, { [veld]: p[veld].map((f) => (f.id === foto.id ? { ...f, omschrijving } : f)) });
   };
+  // Welke na-foto bij welke voor-foto hoort — expliciet gekoppeld, niet op
+  // uploadvolgorde. Anders staan de foto's willekeurig naast elkaar zodra
+  // Anton meer (of andere) na-foto's stuurt dan er voor-foto's zijn.
+  const wijzigFotoKoppeling = (naFoto, voorFotoId) =>
+    wijzigPand(p.id, { naFotos: p.naFotos.map((f) => (f.id === naFoto.id ? { ...f, voorFotoId } : f)) });
 
   const begroteEenheidUur = p.begrootEenheid === "uur";
   const factuurtekst = [
@@ -961,7 +988,12 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
             <FotoUpload label="Foto's toevoegen" bezig={uploadBezig} onFiles={(files) => uploadFotos("na", files)} />
           </div>
           <FotoGrid fotos={p.naFotos} onVerwijder={(f) => verwijderFoto("na", f)}
-            onOmschrijving={(f, v) => wijzigFotoOmschrijving("na", f, v)} />
+            onOmschrijving={(f, v) => wijzigFotoOmschrijving("na", f, v)}
+            koppelOpties={p.voorFotos} onKoppel={wijzigFotoKoppeling} />
+          <p className="text-xs mt-1" style={{ color: "#8A7B98" }}>
+            Koppel elke na-foto aan de bijpassende voor-foto, zodat ze in het opleverrapport goed naast elkaar staan
+            — niet gekoppelde foto's komen los in het rapport te staan.
+          </p>
         </div>
       </Kaart>
 

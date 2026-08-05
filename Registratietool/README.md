@@ -121,8 +121,9 @@ pand           klantId, routeId, naam, adres, filiaalnummer, grootboek,
   ├ materieel  array van labels
   ├ extraWerkzaamheden  { omschrijving, bedrag } — buiten de offerte gedaan
   │                        (graffiti, grofvuil...), bedrag telt mee in omzet
-  ├ voorFotos  { id, pathname } — foto's van Udo, wat er moet gebeuren
-  ├ naFotos    { id, pathname } — foto's van het opgeleverde werk
+  ├ voorFotos  { id, pathname, omschrijving } — foto's van Udo, wat er moet gebeuren
+  ├ naFotos    { id, pathname, omschrijving, voorFotoId } — opgeleverde foto's;
+  │              voorFotoId koppelt 'm expliciet aan een voorFotos-item
   └ verbruik   omschrijving, aantal, prijs
 ```
 
@@ -273,6 +274,16 @@ opslag te zetten.
 `vercel env pull` voor de Blob-token). Onder gewone `npm run dev` faalt de
 upload stil (geen `/api`-fallback voor foto's, in tegenstelling tot de
 JSON-data die op `localStorage` terugvalt).
+
+**Voor/na-koppeling is expliciet, niet op uploadvolgorde.** Eerste versie
+paarde `voorFotos[i]` met `naFotos[i]` puur op array-index — leek te werken
+bij het testen, maar viel in de praktijk plat: Anton stuurt vrijwel altijd
+meer (of andere) na-foto's dan Udo voor-foto's stuurde, dus na een paar
+foto's stonden willekeurige combinaties naast elkaar in het opleverrapport.
+Elke na-foto heeft nu een `voorFotoId` (dropdown in de "Foto's"-kaart, "Hoort
+bij: ..."); `OpleverrapportDocument` groepeert op basis daarvan: gekoppelde
+paren eerst, dan losse voor-foto's zonder match, dan losse na-foto's zonder
+match — nooit een lege "voor"-cel naast een foto die er niet bij hoort.
 
 ## Werkbeschrijving en opleverrapport
 

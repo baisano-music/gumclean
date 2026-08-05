@@ -157,6 +157,14 @@ Dezelfde data levert vier uitkomsten:
   wachtwoordpoort, geen publieke deelbare links.** Zelfde afweging als
   eerder bij de foto's: kleinste beveiligingsoppervlak, Bas is de
   tussenpersoon (printen, kopiëren, appen, mailen).
+- **Voor/na-foto's koppelen via een expliciete `voorFotoId`, niet op
+  uploadvolgorde.** Eerste versie paarde simpelweg foto-index i uit
+  `voorFotos` met index i uit `naFotos` — leek te werken, maar Anton stuurt
+  bijna altijd meer/andere na-foto's dan Udo voor-foto's stuurde (zie het
+  Leek-opleverrapport: vanaf de vierde foto stonden willekeurige combinaties
+  naast elkaar). Bas koppelt nu zelf elke na-foto aan een voor-foto in de
+  tool; foto's zonder koppeling komen los te staan in plaats van naast een
+  verkeerde of lege partner.
 
 ## Explicitly out of scope
 
