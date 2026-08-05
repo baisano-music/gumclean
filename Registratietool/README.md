@@ -292,10 +292,26 @@ paarde `voorFotos[i]` met `naFotos[i]` puur op array-index — leek te werken
 bij het testen, maar viel in de praktijk plat: Anton stuurt vrijwel altijd
 meer (of andere) na-foto's dan Udo voor-foto's stuurde, dus na een paar
 foto's stonden willekeurige combinaties naast elkaar in het opleverrapport.
-Elke na-foto heeft nu een `voorFotoId` (dropdown in de "Foto's"-kaart, "Hoort
-bij: ..."); `OpleverrapportDocument` groepeert op basis daarvan: gekoppelde
-paren eerst, dan losse voor-foto's zonder match, dan losse na-foto's zonder
-match — nooit een lege "voor"-cel naast een foto die er niet bij hoort.
+Elke na-foto heeft nu een `voorFotoId`; `OpleverrapportDocument` groepeert op
+basis daarvan: gekoppelde paren eerst, dan losse voor-foto's zonder match,
+dan losse na-foto's zonder match — nooit een lege "voor"-cel naast een foto
+die er niet bij hoort.
+
+**Koppelen gaat via `FotoKoppelen` (klikken of slepen), niet via een
+dropdown.** Eerste versie van de koppeling was een `<select>` met
+tekstlabels ("Hoort bij: gevel noordkant") onder elke na-foto — werkte, maar
+voelde onhandig: om te zien welke voor-foto bij welke tekst hoorde, moest je
+steeds omhoog scrollen naar de voor-foto-grid en weer terug. `FotoKoppelen`
+toont in plaats daarvan twee kolommen met losse (nog ongekoppelde) voor- en
+na-foto's naast elkaar: klik een foto (roze rand = geselecteerd), klik
+daarna de bijpassende foto in de andere kolom om ze te koppelen — of sleep
+een foto op de andere. Klikken werkt overal, ook op de telefoon; slepen (HTML5
+drag-and-drop) is een bonus die alleen op desktop werkt, dus nooit de enige
+manier. Gekoppelde paren verschijnen als rij bovenaan (voor-thumb ↔ na-thumb),
+met een knop om te ontkoppelen. Dekt ook het geval dat Anton zelf ter plekke
+een extra voor/na-setje maakt van iets dat niet in de oorspronkelijke
+voor-foto's van Udo stond — die foto's staan gewoon los totdat ze gekoppeld
+worden, ongeacht wie ze uploadde of wanneer.
 
 **Elke foto (voor én na) heeft ook een optioneel `dienst`-veld**, een dropdown
 onder de thumbnail in de "Foto's"-kaart (`dienstOpties`/`onDienst`-props op

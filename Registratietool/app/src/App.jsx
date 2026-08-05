@@ -394,9 +394,11 @@ function Kaart({ children, className = "" }) {
 // platte tekst i.p.v. een invoerveld.
 // dienstOpties/onDienst laat elke foto taggen met welke dienst (uit
 // p.diensten) 'm documenteert, default "" (algemeen/ongetagd) — het
-// opleverrapport groepeert de voor/na-sectie hierop. Zelfde patroon als
-// koppelOpties/onKoppel voor de voorFotoId-koppeling hierboven.
-function FotoGrid({ fotos, onVerwijder, onOmschrijving, koppelOpties, onKoppel, dienstOpties, onDienst }) {
+// opleverrapport groepeert de voor/na-sectie hierop. Voor/na-koppeling zelf
+// gebeurt niet hier maar in FotoKoppelen (klikken/slepen) — een dropdown met
+// tekstlabels bleek onhandig: je moet steeds omhoog scrollen om te zien welke
+// foto erbij hoort.
+function FotoGrid({ fotos, onVerwijder, onOmschrijving, dienstOpties, onDienst }) {
   if (!fotos.length) return null;
   return (
     <div className="grid grid-cols-3 gap-2 mt-2">
@@ -427,16 +429,6 @@ function FotoGrid({ fotos, onVerwijder, onOmschrijving, koppelOpties, onKoppel, 
               {dienstOpties.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
           )}
-          {koppelOpties && (
-            <select value={f.voorFotoId ?? ""} onChange={(e) => onKoppel(f, e.target.value)}
-              className="w-full mt-1 px-1 py-1 rounded text-xs outline-none border"
-              style={{ borderColor: "#E4DCEA", background: "white", color: INK }}>
-              <option value="">Los, geen voor-foto</option>
-              {koppelOpties.map((v, i) => (
-                <option key={v.id} value={v.id}>Hoort bij: {v.omschrijving || "voor-foto " + (i + 1)}</option>
-              ))}
-            </select>
-          )}
         </div>
       ))}
     </div>
@@ -455,6 +447,91 @@ function FotoUpload({ label, bezig, onFiles }) {
       <input type="file" accept="image/*" multiple className="hidden" disabled={bezig}
         onChange={(e) => { if (e.target.files.length) onFiles(e.target.files); e.target.value = ""; }} />
     </label>
+  );
+}
+
+// Voor/na-foto's koppelen door te klikken (of te slepen): eerst een losse
+// foto aanklikken (krijgt een roze rand), dan de bijpassende foto uit de
+// andere kolom aanklikken om ze te koppelen. Sleep kan ook, als bonus op
+// desktop — maar klikken werkt overal, ook op de telefoon, waar slepen
+// tussen twee scrollende grids sowieso niet prettig werkt. Vervangt een
+// eerdere dropdown-met-tekstlabel: die dwong steeds omhoog scrollen om te
+// zien welke foto bij welke hoort.
+function FotoKoppelen({ voorFotos, naFotos, selectie, onSelecteer, onKoppel, onOntkoppel }) {
+  const gekoppeldeVoorIds = new Set(naFotos.filter((n) => n.voorFotoId).map((n) => n.voorFotoId));
+  const losseVoor = voorFotos.filter((v) => !gekoppeldeVoorIds.has(v.id));
+  const losseNa = naFotos.filter((n) => !n.voorFotoId);
+  const paren = naFotos
+    .filter((n) => n.voorFotoId && voorFotos.some((v) => v.id === n.voorFotoId))
+    .map((n) => ({ na: n, voor: voorFotos.find((v) => v.id === n.voorFotoId) }));
+
+  const klik = (type, id) => {
+    if (!selectie) return onSelecteer({ type, id });
+    if (selectie.type === type) return onSelecteer(selectie.id === id ? null : { type, id });
+    onKoppel(type === "voor" ? id : selectie.id, type === "na" ? id : selectie.id);
+    onSelecteer(null);
+  };
+  const sleepStart = (e, type, id) => e.dataTransfer.setData("text/plain", JSON.stringify({ type, id }));
+  const drop = (e, type, id) => {
+    e.preventDefault();
+    let bron;
+    try { bron = JSON.parse(e.dataTransfer.getData("text/plain")); } catch { return; }
+    if (!bron || bron.type === type) return;
+    onKoppel(type === "voor" ? id : bron.id, type === "na" ? id : bron.id);
+  };
+
+  const Thumb = ({ foto, type }) => {
+    const aan = selectie?.type === type && selectie.id === foto.id;
+    return (
+      <img src={"/api/fotos?pad=" + encodeURIComponent(foto.pathname)} alt=""
+        draggable onDragStart={(e) => sleepStart(e, type, foto.id)}
+        onDragOver={(e) => e.preventDefault()} onDrop={(e) => drop(e, type, foto.id)}
+        onClick={() => klik(type, foto.id)}
+        className="w-full aspect-square object-cover rounded-lg cursor-pointer transition"
+        style={{ outline: aan ? "3px solid " + ROZE : "1px solid #E4DCEA", outlineOffset: aan ? "-1px" : 0 }} />
+    );
+  };
+
+  if (!voorFotos.length && !naFotos.length) return null;
+  return (
+    <div className="mt-4">
+      <span className="text-sm font-medium" style={{ color: INK }}>Voor/na koppelen</span>
+      <p className="text-xs mt-1 mb-2" style={{ color: "#8A7B98" }}>
+        Tik een losse voor-foto en dan de bijpassende na-foto (of andersom) om ze te koppelen — op desktop kan ook
+        slepen. Anton maakt soms zelf ook een extra voor/na-setje van iets dat hij tegenkomt; die koppel je hier net zo.
+      </p>
+      {paren.length > 0 && (
+        <div className="space-y-1.5 mb-3">
+          {paren.map(({ voor, na }) => (
+            <div key={na.id} className="flex items-center gap-2 p-1.5 rounded-lg" style={{ background: PAPIER }}>
+              <img src={"/api/fotos?pad=" + encodeURIComponent(voor.pathname)} alt="" className="w-12 h-12 object-cover rounded-lg shrink-0" />
+              <span style={{ color: "#B9A9C4" }}>↔</span>
+              <img src={"/api/fotos?pad=" + encodeURIComponent(na.pathname)} alt="" className="w-12 h-12 object-cover rounded-lg shrink-0" />
+              <span className="text-xs flex-1 truncate" style={{ color: "#6B5B7B" }}>
+                {voor.omschrijving || na.omschrijving || "gekoppeld"}
+              </span>
+              <button onClick={() => onOntkoppel(na)} className="shrink-0"><Trash2 size={14} style={{ color: "#B9A9C4" }} /></button>
+            </div>
+          ))}
+        </div>
+      )}
+      {(losseVoor.length > 0 || losseNa.length > 0) && (
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <span className="text-xs" style={{ color: "#8A7B98" }}>Losse voor-foto's</span>
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              {losseVoor.map((v) => <Thumb key={v.id} foto={v} type="voor" />)}
+            </div>
+          </div>
+          <div>
+            <span className="text-xs" style={{ color: "#8A7B98" }}>Losse na-foto's</span>
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              {losseNa.map((n) => <Thumb key={n.id} foto={n} type="na" />)}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -836,6 +913,7 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
   const weg = (veld, i) => wijzigPand(p.id, { [veld]: p[veld].filter((_, j) => j !== i) });
 
   const [uploadBezig, setUploadBezig] = useState(false);
+  const [selectieFoto, setSelectieFoto] = useState(null); // { type: "voor" | "na", id } — voor het klikken-om-te-koppelen
   const [printKaart, setPrintKaart] = useState(null);
   useEffect(() => {
     if (!printKaart) return;
@@ -874,8 +952,9 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
   // Welke na-foto bij welke voor-foto hoort — expliciet gekoppeld, niet op
   // uploadvolgorde. Anders staan de foto's willekeurig naast elkaar zodra
   // Anton meer (of andere) na-foto's stuurt dan er voor-foto's zijn.
-  const wijzigFotoKoppeling = (naFoto, voorFotoId) =>
-    wijzigPand(p.id, { naFotos: p.naFotos.map((f) => (f.id === naFoto.id ? { ...f, voorFotoId } : f)) });
+  const koppelFotos = (voorId, naId) =>
+    wijzigPand(p.id, { naFotos: p.naFotos.map((f) => (f.id === naId ? { ...f, voorFotoId: voorId } : f)) });
+  const ontkoppelFotos = (naFoto) => koppelFotos("", naFoto.id);
   // Welke dienst (uit p.diensten) een foto documenteert — bepaalt de
   // groepering in het opleverrapport, zie OpleverrapportDocument.
   const wijzigFotoDienst = (type, foto, dienst) => {
@@ -1095,14 +1174,14 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
           </div>
           <FotoGrid fotos={p.naFotos} onVerwijder={(f) => verwijderFoto("na", f)}
             onOmschrijving={(f, v) => wijzigFotoOmschrijving("na", f, v)}
-            dienstOpties={p.diensten} onDienst={(f, v) => wijzigFotoDienst("na", f, v)}
-            koppelOpties={p.voorFotos} onKoppel={wijzigFotoKoppeling} />
+            dienstOpties={p.diensten} onDienst={(f, v) => wijzigFotoDienst("na", f, v)} />
           <p className="text-xs mt-1" style={{ color: "#8A7B98" }}>
-            Koppel elke na-foto aan de bijpassende voor-foto, zodat ze in het opleverrapport goed naast elkaar staan
-            — niet gekoppelde foto's komen los in het rapport te staan. Tag voor- én na-foto met dezelfde dienst
-            om ze in het rapport bij elkaar te houden; ongetagde foto's komen onder "Algemeen".
+            Tag voor- én na-foto met dezelfde dienst om ze in het rapport bij elkaar te houden; ongetagde foto's
+            komen onder "Algemeen".
           </p>
         </div>
+        <FotoKoppelen voorFotos={p.voorFotos} naFotos={p.naFotos} selectie={selectieFoto} onSelecteer={setSelectieFoto}
+          onKoppel={koppelFotos} onOntkoppel={ontkoppelFotos} />
       </Kaart>
 
       {/* Uren */}
