@@ -48,7 +48,52 @@ const LEEG_PAND = (klantId) => ({
   onderhoudsintervalMaanden: 0,
   contactpersoonTerPlaatse: "", telefoonTerPlaatse: "", instructies: "",
   voorOmschrijving: "", voorFotos: [], naFotos: [], afgerondOp: "",
-  materieel: [], uren: [], ritten: [], verbruik: []
+  materieel: [], uren: [], ritten: [], verbruik: [], extraWerkzaamheden: []
+});
+
+const STANDAARD_WERKWIJZE = "Wij reinigen gevels, glas en lichtreclame met osmosetechniek en hoogwaardig "
+  + "materiaal. Osmose en zuiver water laten glas en gevel streeploos opdrogen, zonder kalkranden en zonder "
+  + "nawerk. Wij werken met de juiste druk en methode per ondergrond, veilig voor gevelbeplating, voegen en "
+  + "kozijnen. Als gespecialiseerde partij plannen wij per regio, zodat meerdere panden in een route worden "
+  + "meegenomen. U ontvangt voor- en na-fotodocumentatie per pand, vrij te gebruiken voor uw eigen communicatie.";
+const STANDAARD_WAT_U_KRIJGT = "Een vast aanspreekpunt voor alle panden\nVoor- en na-fotodocumentatie per pand\n"
+  + "Streeploos resultaat door osmosetechniek, zonder nawerk\nPlanning in overleg, afgestemd op uw winkeltijden";
+const STANDAARD_VOORWAARDEN = "Deze offerte is geldig tot {geldigDagen} dagen na dagtekening.\n"
+  + "Genoemde prijzen zijn exclusief 21% btw" + ".\n"
+  + "Hoogwerkerhuur wordt, waar nodig, een op een doorbelast tegen kostprijs.\n"
+  + "Facturatie per uitgevoerde beurt, betaaltermijn 60 dagen.\n"
+  + "Op al onze werkzaamheden zijn onze algemene voorwaarden van toepassing.";
+
+// Offertenummer is doorlopend per jaar (2026-001, 2026-002...) — hoogste bestaande + 1.
+const volgendOffertenummer = (offertes) => {
+  const jaar = new Date().getFullYear();
+  const nummers = offertes
+    .map((o) => /^(\d{4})-(\d{3})$/.exec(o.offertenummer || ""))
+    .filter((m) => m && Number(m[1]) === jaar)
+    .map((m) => Number(m[2]));
+  const volgende = (nummers.length ? Math.max(...nummers) : 0) + 1;
+  return jaar + "-" + String(volgende).padStart(3, "0");
+};
+
+const LEEG_OFFERTE = (klantId, type = "meerdere-panden") => ({
+  id: crypto.randomUUID(), klantId, type,
+  offertenummer: "", datum: "", geldigDagen: type === "spoedopdracht" ? 14 : 30,
+  titel: "", samenvatting: "", aanhef: "", inleiding: "",
+  // Aan wie de offerte gericht is — los van de factuurroute, want dat is vaak
+  // een ander adres (bv. hoofdkantoor of specifiek filiaal bij een spoedklus).
+  voorNaam: "", voorTav: "", voorAdres: "",
+  status: "concept",
+  // Meerdere panden: regels is een momentopname (naam/mandagen/hoogwerker/prijs)
+  // van de geselecteerde panden op het moment van overnemen — geen live
+  // koppeling, want een later gewijzigd pand mag een verstuurde offerte niet
+  // met terugwerkende kracht veranderen.
+  pandIds: [], regels: [],
+  werkwijze: STANDAARD_WERKWIJZE, watUKrijgt: STANDAARD_WAT_U_KRIJGT,
+  onderhoudContract: false, lichtreclameOptie: false, lichtreclamePrijsPerPand: 175,
+  // Spoedopdracht: grotendeels vrije tekst, want elke situatie is anders.
+  situatie: "", aanpak: "", risicos: "", praktisch: "",
+  prijsregels: [], voorrijkosten: 0,
+  voorwaarden: STANDAARD_VOORWAARDEN,
 });
 
 const START = () => {
@@ -70,7 +115,7 @@ const START = () => {
     p("Spakenburg (UT)", 3, 55, false),
     p("Zwaagdijk (NH)", 6, 50, true),
     p("Wolvega (FR)", 6, 135, true),
-    p("Drachten (FR)", 4, 165, true, rA.id, {
+    p("Drachten (FR)", 6, 165, true, rA.id, {
       filiaalnummer: "1021", adres: "Moleneind ZZ 63, 9203 ZW Drachten",
       werkzaamheden: "Reinigen gevel, en graffiti op gebouw", diensten: ["Gevelreiniging", "Graffitiverwijdering"],
     }),
@@ -87,6 +132,7 @@ const START = () => {
   return {
     klanten: [action],
     panden,
+    offertes: [],
     instellingen: {
       thuisadres: "Manenburgdreef 93, 2135 GV Hoofddorp", dieselprijs: 1.95, verbruik: 8.5,
       btwPercentage: 21, reserveringAov: 0, reserveringPensioen: 0, reserveringWeer: 0, reserveringInvestering: 0,
@@ -171,7 +217,13 @@ const cijfers = (data, p) => {
   const begroteMandagen = begroteEenheidUur ? num(p.begrootMandagen) / 8 : num(p.begrootMandagen);
   const omzetBasis = begroteEenheidUur ? num(p.begrootMandagen) * (tarief / 8) : num(p.begrootMandagen) * tarief;
   const voorrijkosten = num(p.voorrijkosten);
-  const omzet = omzetBasis + voorrijkosten;
+  // Extra werkzaamheden buiten de offerte (graffiti, grofvuil, extra vieze
+  // stoep...) die Anton achteraf meldt — telt mee in de omzet, anders oogt
+  // de nacalculatie te negatief bij een klus met extra's die wél gefactureerd
+  // worden. (p.extraWerkzaamheden || []) omdat oudere panden dit veld nog
+  // niet hebben.
+  const extraOmzet = (p.extraWerkzaamheden || []).reduce((s, x) => s + num(x.bedrag), 0);
+  const omzet = omzetBasis + voorrijkosten + extraOmzet;
 
   const reiskosten = kmZakelijk * KM_TARIEF;
   const arbeid = effectieveUren * uurloon;
@@ -236,7 +288,7 @@ const cijfers = (data, p) => {
 
   return {
     tarief, uurloon, gewerkteUren, effectieveUren, mandagenWerkelijk: effectieveUren / 8, kmZakelijk, kmPrive,
-    materiaal, omzetBasis, voorrijkosten, omzet, reiskosten, arbeid, kosten, marge, resultaat, liters,
+    materiaal, omzetBasis, voorrijkosten, extraOmzet, omzet, reiskosten, arbeid, kosten, marge, resultaat, liters,
     diesel: liters * num(data.instellingen.dieselprijs),
     effectief: effectieveUren > 0 ? marge / effectieveUren : 0,
     dekking: arbeid > 0 ? marge / arbeid : 0,
@@ -258,6 +310,20 @@ function Veld({ label, value, onChange, type = "text", placeholder, breed }) {
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 rounded-lg text-sm outline-none border"
         style={{ borderColor: "#E4DCEA", background: "white", color: INK }}
+      />
+    </label>
+  );
+}
+
+function TekstVeld({ label, value, onChange, placeholder, rijen = 3, breed }) {
+  return (
+    <label className={"block " + (breed ? "col-span-2" : "")}>
+      <span className="block text-xs mb-1" style={{ color: "#6B5B7B" }}>{label}</span>
+      <textarea
+        value={value ?? ""} placeholder={placeholder} rows={rijen}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 rounded-lg text-sm outline-none border"
+        style={{ borderColor: "#E4DCEA", background: "white", color: INK, fontFamily: "inherit" }}
       />
     </label>
   );
@@ -314,7 +380,7 @@ function FotoGrid({ fotos, onVerwijder, onOmschrijving }) {
   return (
     <div className="grid grid-cols-3 gap-2 mt-2">
       {fotos.map((f) => (
-        <div key={f.id} className="relative">
+        <div key={f.id} className="relative print-avoid-break">
           <img src={"/api/fotos?pad=" + encodeURIComponent(f.pathname)} alt=""
             className="w-full aspect-square object-cover rounded-lg" style={{ border: "1px solid #E4DCEA" }} />
           {onVerwijder && (
@@ -344,7 +410,10 @@ function FotoUpload({ label, bezig, onFiles }) {
       style={{ background: "#F5EFF8", color: INK }}>
       <Package size={13} />
       {bezig ? "Uploaden…" : label}
-      <input type="file" accept="image/*" multiple capture="environment" className="hidden" disabled={bezig}
+      {/* Geen capture-attribuut: dat dwingt op mobiel vaak de camera af en
+          blokkeert dan juist het in één keer selecteren van meerdere foto's
+          uit de galerij/bestanden — met multiple alleen kan allebei. */}
+      <input type="file" accept="image/*" multiple className="hidden" disabled={bezig}
         onChange={(e) => { if (e.target.files.length) onFiles(e.target.files); e.target.value = ""; }} />
     </label>
   );
@@ -375,16 +444,16 @@ function Overzicht({ data, setScherm, bewaar }) {
         }, { omzet: 0, marge: 0, resultaat: 0, kosten: 0, km: 0, uren: 0, reserveringTotaal: 0, nettoBeschikbaar: 0 });
         return (
           <div key={k.id}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Building2 size={18} style={{ color: ROZE }} />
-                <h2 className="text-lg" style={{ fontFamily: "Fredoka", color: INK }}>{k.naam || "Naamloze klant"}</h2>
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#F3ECF7", color: "#6B5B7B" }}>
-                  {eur0(k.dagtarief)} verkoop/mandag · {eur(k.uurloon ?? 25)} kostprijs Anton/uur
-                </span>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <Building2 size={18} style={{ color: ROZE }} className="shrink-0" />
+                <h2 className="text-lg truncate" style={{ fontFamily: "Fredoka", color: INK }}>{k.naam || "Naamloze klant"}</h2>
               </div>
               <Knop variant="wit" klein onClick={() => setScherm({ naam: "klant", id: k.id })}>Klantgegevens</Knop>
             </div>
+            <span className="inline-block text-xs px-2 py-0.5 rounded-full mb-2" style={{ background: "#F3ECF7", color: "#6B5B7B" }}>
+              {eur0(k.dagtarief)} verkoop/mandag · {eur(k.uurloon ?? 25)} kostprijs Anton/uur
+            </span>
 
             <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #EDE6F2", background: "white" }}>
               {panden.map((p, i) => {
@@ -585,9 +654,12 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
     "Opdrachtgever: " + (k?.contactpersoon || "[onbekend]"),
     "",
     "Uitgevoerde werkzaamheden: " + (p.werkzaamheden || "[werkzaamheden ontbreekt]"),
+    p.extraWerkzaamheden.length > 0 ? "Extra werkzaamheden buiten de offerte:" : "",
+    ...p.extraWerkzaamheden.map((x) => "  - " + (x.omschrijving || "[omschrijving ontbreekt]") + (num(x.bedrag) > 0 ? " (" + eur(x.bedrag) + ")" : "")),
     "",
     p.begrootMandagen + (begroteEenheidUur ? " uur à " + eur0(g.tarief / 8) : " mandagen à " + eur0(g.tarief))
       + (num(p.voorrijkosten) > 0 ? " + " + eur(p.voorrijkosten) + " voorrijkosten" : "")
+      + (g.extraOmzet > 0 ? " + " + eur(g.extraOmzet) + " extra werkzaamheden" : "")
       + " = " + eur(g.omzet) + " excl. btw",
     p.hoogwerker ? "Hoogwerkerhuur doorbelast: " + eur(p.doorbelast) : "",
     "Betaaltermijn: " + (k?.betaaltermijn || 60) + " dagen",
@@ -875,6 +947,31 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
         </Knop>
       </Kaart>
 
+      {/* Extra werkzaamheden */}
+      <Kaart>
+        <div className="flex items-center gap-2 mb-3">
+          <AlertTriangle size={16} style={{ color: ROZE }} />
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Extra werkzaamheden (buiten de offerte)</h3>
+          {g.extraOmzet > 0 && <span className="ml-auto text-sm" style={{ color: "#6B5B7B" }}>{eur(g.extraOmzet)}</span>}
+        </div>
+        <p className="text-xs mb-3" style={{ color: "#8A7B98" }}>
+          Wat Anton er onderweg bij heeft gedaan, boven op de offerte — graffiti, grofvuil, een extra vieze stoep.
+          Bedrag is optioneel; met bedrag telt het mee in de omzet hieronder én in de factuurregels.
+        </p>
+        {p.extraWerkzaamheden.map((x, i) => (
+          <div key={i} className="grid grid-cols-12 gap-2 mb-2 items-center">
+            <input value={x.omschrijving} placeholder="omschrijving" onChange={(e) => wijzigRij("extraWerkzaamheden", i, { omschrijving: e.target.value })}
+              className="col-span-8 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: "#E4DCEA", color: INK }} />
+            <input type="number" step="0.01" value={x.bedrag} placeholder="bedrag" onChange={(e) => wijzigRij("extraWerkzaamheden", i, { bedrag: e.target.value })}
+              className="col-span-3 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: "#E4DCEA", color: INK }} />
+            <button onClick={() => weg("extraWerkzaamheden", i)} className="col-span-1 flex justify-center"><Trash2 size={14} style={{ color: "#B9A9C4" }} /></button>
+          </div>
+        ))}
+        <Knop variant="wit" klein onClick={() => voegToe("extraWerkzaamheden", { omschrijving: "", bedrag: "" })}>
+          <span className="flex items-center gap-1"><Plus size={13} /> Regel toevoegen</span>
+        </Knop>
+      </Kaart>
+
       {/* Nacalculatie */}
       <Kaart>
         <div className="flex items-center gap-2 mb-3">
@@ -899,6 +996,12 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
             <div className="flex justify-between py-1.5" style={{ borderBottom: "1px solid #F3EDF7" }}>
               <span style={{ color: "#6B5B7B" }}>Voorrijkosten (afgesproken)</span>
               <span style={{ color: INK }}>{eur(g.voorrijkosten)}</span>
+            </div>
+          )}
+          {g.extraOmzet > 0 && (
+            <div className="flex justify-between py-1.5" style={{ borderBottom: "1px solid #F3EDF7" }}>
+              <span style={{ color: "#6B5B7B" }}>Extra werkzaamheden (buiten de offerte)</span>
+              <span style={{ color: INK }}>{eur(g.extraOmzet)}</span>
             </div>
           )}
           {[
@@ -1083,7 +1186,7 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
             </span>
           </div>
           <h1 style={{ fontFamily: "Fredoka", fontWeight: 600, fontSize: "1.5rem", color: "#1A0A2E" }}>{p.naam || "Naamloos pand"}</h1>
-          <p style={{ color: "#6B6076" }}>{p.adres}</p>
+          <p style={{ color: "#6B6076" }}>{p.adres}{p.filiaalnummer ? " · filiaalnummer " + p.filiaalnummer : ""}</p>
           <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm" style={{ color: "#6B6076" }}>
             <span>Opdrachtgever: {k?.contactpersoon || "—"}</span>
             {p.afgerondOp && <span style={{ color: "#1E8E5A" }}>Afgerond op {datumNL(new Date(p.afgerondOp + "T00:00:00"))}</span>}
@@ -1096,13 +1199,24 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
             </div>
           )}
 
+          {p.extraWerkzaamheden.length > 0 && (
+            <div className="mt-5">
+              <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }}>Extra uitgevoerd, buiten de offerte</h2>
+              <ul style={{ color: "#1A0A2E" }}>
+                {p.extraWerkzaamheden.map((x, i) => (
+                  <li key={i}>{x.omschrijving}{num(x.bedrag) > 0 ? " — " + eur(x.bedrag) + " excl. btw" : ""}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {(p.voorFotos.length > 0 || p.naFotos.length > 0) && (
             <div className="mt-5">
               <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }} className="mb-2">Voor en na</h2>
               <div className="grid grid-cols-2 gap-4">
                 {Array.from({ length: Math.max(p.voorFotos.length, p.naFotos.length) }).map((_, i) => (
                   <React.Fragment key={i}>
-                    <div>
+                    <div className="print-avoid-break">
                       {p.voorFotos[i] && (
                         <img src={"/api/fotos?pad=" + encodeURIComponent(p.voorFotos[i].pathname)} alt="voor"
                           className="w-full aspect-square object-cover" style={{ borderRadius: 20, boxShadow: "0 1px 2px rgba(26,10,46,.06)" }} />
@@ -1111,7 +1225,7 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
                         voor{p.voorFotos[i]?.omschrijving ? " — " + p.voorFotos[i].omschrijving : ""}
                       </p>
                     </div>
-                    <div>
+                    <div className="print-avoid-break">
                       {p.naFotos[i] && (
                         <img src={"/api/fotos?pad=" + encodeURIComponent(p.naFotos[i].pathname)} alt="na"
                           className="w-full aspect-square object-cover" style={{ borderRadius: 20, boxShadow: "0 1px 2px rgba(26,10,46,.06)" }} />
@@ -1137,6 +1251,464 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
         setScherm({ naam: "overzicht" });
       }}>
         <span className="flex items-center gap-1" style={{ color: "#8A7B98" }}><Trash2 size={13} /> Opdracht verwijderen</span>
+      </Knop>
+    </div>
+  );
+}
+
+// =================== OFFERTES ===================
+function OffertesScherm({ data, bewaar, setScherm }) {
+  const nieuweOfferte = (klantId, type) => {
+    const k = data.klanten.find((x) => x.id === klantId);
+    const offerte = {
+      ...LEEG_OFFERTE(klantId, type),
+      offertenummer: volgendOffertenummer(data.offertes),
+      datum: new Date().toISOString().slice(0, 10),
+      voorNaam: k?.naam || "",
+      voorTav: k?.contactpersoon ? "T.a.v. " + k.contactpersoon : "",
+    };
+    bewaar({ ...data, offertes: [...data.offertes, offerte] });
+    setScherm({ naam: "offerte", id: offerte.id });
+  };
+  return (
+    <div className="space-y-6">
+      {data.klanten.map((k) => {
+        const offertes = data.offertes.filter((o) => o.klantId === k.id);
+        return (
+          <div key={k.id}>
+            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+              <h2 className="text-lg" style={{ fontFamily: "Fredoka", color: INK }}>{k.naam || "Naamloze klant"}</h2>
+              <div className="flex gap-2">
+                <Knop variant="wit" klein onClick={() => nieuweOfferte(k.id, "meerdere-panden")}>
+                  <span className="flex items-center gap-1"><Plus size={13} /> Meerdere panden</span>
+                </Knop>
+                <Knop variant="wit" klein onClick={() => nieuweOfferte(k.id, "spoedopdracht")}>
+                  <span className="flex items-center gap-1"><Plus size={13} /> Spoedopdracht</span>
+                </Knop>
+              </div>
+            </div>
+            {offertes.length === 0 ? (
+              <p className="text-sm" style={{ color: "#8A7B98" }}>Nog geen offertes voor deze klant.</p>
+            ) : (
+              <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #EDE6F2", background: "white" }}>
+                {offertes.map((o, i) => (
+                  <button key={o.id} onClick={() => setScherm({ naam: "offerte", id: o.id })}
+                    className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition"
+                    style={{ borderTop: i ? "1px solid #F1EAF5" : "none" }}>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-medium truncate" style={{ color: INK }}>
+                        {o.offertenummer || "(geen nummer)"} — {o.titel || (o.type === "spoedopdracht" ? "Spoedopdracht" : "Meerdere panden")}
+                      </span>
+                      <span className="block text-xs truncate" style={{ color: "#8A7B98" }}>
+                        {o.type === "spoedopdracht" ? "Spoedopdracht" : o.regels.length + " pand" + (o.regels.length === 1 ? "" : "en")} · {o.status}
+                      </span>
+                    </span>
+                    {o.datum && <span className="text-xs shrink-0" style={{ color: "#8A7B98" }}>{datumNL(new Date(o.datum + "T00:00:00"))}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Het genummerde sectiekop-blok uit het design system (§4 Sectiekop-blok):
+// vlak nummerblok links, titel rechts. Herbruikbaar element, ook op de site.
+function OfferteSectie({ nummer, titel, children }) {
+  return (
+    <div className="mb-5">
+      <div className="flex items-center gap-3 mb-2">
+        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0"
+          style={{ background: "#FF3D9A", color: "white", fontFamily: "Fredoka" }}>{nummer}</span>
+        <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }}>{titel}</h2>
+      </div>
+      <div style={{ color: "#1A0A2E", marginLeft: "2.5rem" }}>{children}</div>
+    </div>
+  );
+}
+
+// Meerdere regels tekst, gescheiden door een lege regel of \n, als losse <p>'s.
+function TekstBlok({ tekst }) {
+  return tekst.split("\n").filter(Boolean).map((regel, i) => <p key={i} className="mb-1">{regel}</p>);
+}
+
+function OfferteScherm({ id, data, wijzigOfferte, bewaar, setScherm }) {
+  const o = data.offertes.find((x) => x.id === id);
+  if (!o) return null;
+  const k = data.klanten.find((x) => x.id === o.klantId);
+  const pandenVanKlant = data.panden.filter((x) => x.klantId === o.klantId);
+
+  const [printActief, setPrintActief] = useState(false);
+  useEffect(() => {
+    if (!printActief) return;
+    const t = setTimeout(() => window.print(), 50);
+    const reset = () => setPrintActief(false);
+    window.addEventListener("afterprint", reset);
+    return () => { clearTimeout(t); window.removeEventListener("afterprint", reset); };
+  }, [printActief]);
+
+  const totaalMeerderePanden = o.regels.reduce((s, r) => s + num(r.prijs), 0);
+  const onderhoudTotaal = totaalMeerderePanden * (num(data.instellingen.onderhoudsPercentage) || 60) / 100;
+  const totaalSpoedopdracht = o.prijsregels.reduce((s, x) => s + num(x.bedrag), 0) + num(o.voorrijkosten);
+
+  // Sectienummers doorlopend berekenen i.p.v. hardcoden — optionele secties
+  // worden per offerte aan/uit gezet, dus vaste nummers zouden gaten of
+  // dubbele nummers geven zodra niet alle secties getoond worden.
+  let volgnr = 0;
+  const nrs = {};
+  if (o.type === "meerdere-panden") {
+    nrs.werkwijze = ++volgnr;
+    nrs.prijs = ++volgnr;
+    if (o.onderhoudContract) nrs.onderhoud = ++volgnr;
+    if (o.lichtreclameOptie) nrs.lichtreclame = ++volgnr;
+    nrs.watUKrijgt = ++volgnr;
+  } else {
+    if (o.situatie) nrs.situatie = ++volgnr;
+    if (o.aanpak) nrs.aanpak = ++volgnr;
+    if (o.risicos) nrs.risicos = ++volgnr;
+    nrs.prijs = ++volgnr;
+    if (o.praktisch) nrs.praktisch = ++volgnr;
+  }
+  nrs.voorwaarden = ++volgnr;
+  nrs.akkoord = ++volgnr;
+
+  const pandTogglen = (pandId) =>
+    wijzigOfferte(o.id, { pandIds: o.pandIds.includes(pandId) ? o.pandIds.filter((x) => x !== pandId) : [...o.pandIds, pandId] });
+
+  const regelsOvernemen = () => {
+    const regels = o.pandIds.map((pandId) => {
+      const p = pandenVanKlant.find((x) => x.id === pandId);
+      if (!p) return null;
+      const g = cijfers(data, p);
+      const mandagen = p.begrootEenheid === "uur" ? num(p.begrootMandagen) / 8 : num(p.begrootMandagen);
+      return { pandId: p.id, naam: p.naam, mandagen, hoogwerker: p.hoogwerker, prijs: g.omzetBasis };
+    }).filter(Boolean);
+    wijzigOfferte(o.id, { regels });
+  };
+  const wijzigRegel = (i, patch) =>
+    wijzigOfferte(o.id, { regels: o.regels.map((r, j) => (j === i ? { ...r, ...patch } : r)) });
+  const wegRegel = (i) => wijzigOfferte(o.id, { regels: o.regels.filter((_, j) => j !== i) });
+
+  const voegPrijsregelToe = () => wijzigOfferte(o.id, { prijsregels: [...o.prijsregels, { omschrijving: "", bedrag: "" }] });
+  const wijzigPrijsregel = (i, patch) =>
+    wijzigOfferte(o.id, { prijsregels: o.prijsregels.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+  const wegPrijsregel = (i) => wijzigOfferte(o.id, { prijsregels: o.prijsregels.filter((_, j) => j !== i) });
+
+  return (
+    <div className="space-y-5">
+      <Kaart>
+        <div className="flex items-center justify-between mb-3">
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Offerte</h3>
+          <label className="text-xs">
+            <select value={o.status} onChange={(e) => wijzigOfferte(o.id, { status: e.target.value })}
+              className="px-2 py-1 rounded-lg text-xs border" style={{ borderColor: "#E4DCEA", color: INK }}>
+              <option value="concept">Concept</option>
+              <option value="verstuurd">Verstuurd</option>
+              <option value="akkoord">Akkoord</option>
+              <option value="afgewezen">Afgewezen</option>
+            </select>
+          </label>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Veld label="Offertenummer" value={o.offertenummer} onChange={(v) => wijzigOfferte(o.id, { offertenummer: v })} />
+          <Veld label="Datum" type="date" value={o.datum} onChange={(v) => wijzigOfferte(o.id, { datum: v })} />
+          <Veld label="Geldig (dagen)" type="number" value={o.geldigDagen} onChange={(v) => wijzigOfferte(o.id, { geldigDagen: v })} />
+          <Veld label="Titel" value={o.titel} placeholder={o.type === "spoedopdracht" ? "bv. Verwijderen verfvlekken — Action Geldrop" : "bv. 9 panden · 0-beurt"}
+            onChange={(v) => wijzigOfferte(o.id, { titel: v })} />
+          <Veld breed label="Samenvatting (onder de titel)" value={o.samenvatting} onChange={(v) => wijzigOfferte(o.id, { samenvatting: v })} />
+          <Veld label="Voor: naam" value={o.voorNaam} onChange={(v) => wijzigOfferte(o.id, { voorNaam: v })} />
+          <Veld label="Voor: t.a.v." value={o.voorTav} onChange={(v) => wijzigOfferte(o.id, { voorTav: v })} />
+          <Veld breed label="Voor: adres" value={o.voorAdres} onChange={(v) => wijzigOfferte(o.id, { voorAdres: v })} />
+          <Veld breed label="Aanhef" value={o.aanhef} placeholder="bv. heer Blauw, beste Udo," onChange={(v) => wijzigOfferte(o.id, { aanhef: v })} />
+          <TekstVeld breed label="Inleiding" value={o.inleiding} onChange={(v) => wijzigOfferte(o.id, { inleiding: v })} />
+        </div>
+      </Kaart>
+
+      {o.type === "meerdere-panden" ? (
+        <>
+          <Kaart>
+            <h3 className="mb-3" style={{ fontFamily: "Fredoka", color: INK }}>Panden</h3>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {pandenVanKlant.map((p) => {
+                const aan = o.pandIds.includes(p.id);
+                return (
+                  <button key={p.id} onClick={() => pandTogglen(p.id)}
+                    className="px-3 py-1.5 rounded-full text-xs transition"
+                    style={aan ? { background: INK, color: "white" } : { background: "#F5EFF8", color: "#6B5B7B" }}>
+                    {p.naam || "naamloos"}
+                  </button>
+                );
+              })}
+            </div>
+            <Knop variant="wit" klein onClick={regelsOvernemen}>Regels overnemen ({o.pandIds.length} geselecteerd)</Knop>
+            <p className="text-xs mt-2" style={{ color: "#8A7B98" }}>
+              Neemt mandagen, hoogwerker en prijs over van de geselecteerde panden. Daarna een momentopname — een
+              latere wijziging aan een pand past de regel hieronder niet met terugwerkende kracht aan, pas 'm
+              handmatig aan als de prijs alsnog afwijkt.
+            </p>
+            {o.regels.length > 0 && (
+              <div className="mt-4">
+                {o.regels.map((r, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2 mb-2 items-center">
+                    <input value={r.naam} placeholder="pand" onChange={(e) => wijzigRegel(i, { naam: e.target.value })}
+                      className="col-span-5 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: "#E4DCEA", color: INK }} />
+                    <input type="number" value={r.mandagen} placeholder="mandagen" onChange={(e) => wijzigRegel(i, { mandagen: e.target.value })}
+                      className="col-span-2 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: "#E4DCEA", color: INK }} />
+                    <label className="col-span-2 flex items-center gap-1 text-xs" style={{ color: "#6B5B7B" }}>
+                      <input type="checkbox" checked={r.hoogwerker} onChange={(e) => wijzigRegel(i, { hoogwerker: e.target.checked })} />
+                      Hoogwerker
+                    </label>
+                    <input type="number" step="0.01" value={r.prijs} placeholder="prijs" onChange={(e) => wijzigRegel(i, { prijs: e.target.value })}
+                      className="col-span-2 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: "#E4DCEA", color: INK }} />
+                    <button onClick={() => wegRegel(i)} className="col-span-1 flex justify-center"><Trash2 size={14} style={{ color: "#B9A9C4" }} /></button>
+                  </div>
+                ))}
+                <p className="text-sm mt-2" style={{ color: INK }}>Totaal: {eur0(totaalMeerderePanden)} excl. btw</p>
+              </div>
+            )}
+          </Kaart>
+          <Kaart>
+            <h3 className="mb-3" style={{ fontFamily: "Fredoka", color: INK }}>Tekst en opties</h3>
+            <div className="grid grid-cols-1 gap-3">
+              <TekstVeld breed label="Onze werkwijze" rijen={4} value={o.werkwijze} onChange={(v) => wijzigOfferte(o.id, { werkwijze: v })} />
+              <TekstVeld breed label="Wat u van ons krijgt (één per regel)" rijen={4} value={o.watUKrijgt} onChange={(v) => wijzigOfferte(o.id, { watUKrijgt: v })} />
+              <label className="flex items-center gap-2 text-sm" style={{ color: INK }}>
+                <input type="checkbox" checked={o.onderhoudContract} onChange={(e) => wijzigOfferte(o.id, { onderhoudContract: e.target.checked })} />
+                Optioneel onderhoudscontract tonen ({data.instellingen.onderhoudsPercentage ?? 60}% van de 0-beurt, {eur0(onderhoudTotaal)} per ronde)
+              </label>
+              <div className="flex items-center gap-2 text-sm" style={{ color: INK }}>
+                <input type="checkbox" checked={o.lichtreclameOptie} onChange={(e) => wijzigOfferte(o.id, { lichtreclameOptie: e.target.checked })} />
+                <span>Optie lichtreclame reinigen tonen, à</span>
+                <input type="number" value={o.lichtreclamePrijsPerPand} onChange={(e) => wijzigOfferte(o.id, { lichtreclamePrijsPerPand: e.target.value })}
+                  className="w-20 px-2 py-1 rounded-lg text-sm border" style={{ borderColor: "#E4DCEA", color: INK }} />
+                <span>per pand per keer</span>
+              </div>
+            </div>
+          </Kaart>
+        </>
+      ) : (
+        <>
+          <Kaart>
+            <h3 className="mb-3" style={{ fontFamily: "Fredoka", color: INK }}>Situatie en aanpak</h3>
+            <div className="grid grid-cols-1 gap-3">
+              <TekstVeld breed label="De situatie (één punt per regel)" rijen={4} value={o.situatie} onChange={(v) => wijzigOfferte(o.id, { situatie: v })} />
+              <TekstVeld breed label="Onze aanpak (één stap per regel)" rijen={5} value={o.aanpak} onChange={(v) => wijzigOfferte(o.id, { aanpak: v })} />
+              <TekstVeld breed label="Waar wij rekening mee houden (één punt per regel)" rijen={4} value={o.risicos} onChange={(v) => wijzigOfferte(o.id, { risicos: v })} />
+              <TekstVeld breed label="Praktisch (uitvoering, wat nodig van klant, facturatie...)" rijen={4} value={o.praktisch} onChange={(v) => wijzigOfferte(o.id, { praktisch: v })} />
+            </div>
+          </Kaart>
+          <Kaart>
+            <h3 className="mb-3" style={{ fontFamily: "Fredoka", color: INK }}>Prijs</h3>
+            {o.prijsregels.map((x, i) => (
+              <div key={i} className="grid grid-cols-12 gap-2 mb-2 items-center">
+                <input value={x.omschrijving} placeholder="omschrijving" onChange={(e) => wijzigPrijsregel(i, { omschrijving: e.target.value })}
+                  className="col-span-8 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: "#E4DCEA", color: INK }} />
+                <input type="number" step="0.01" value={x.bedrag} placeholder="bedrag" onChange={(e) => wijzigPrijsregel(i, { bedrag: e.target.value })}
+                  className="col-span-3 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: "#E4DCEA", color: INK }} />
+                <button onClick={() => wegPrijsregel(i)} className="col-span-1 flex justify-center"><Trash2 size={14} style={{ color: "#B9A9C4" }} /></button>
+              </div>
+            ))}
+            <Knop variant="wit" klein onClick={voegPrijsregelToe}>
+              <span className="flex items-center gap-1"><Plus size={13} /> Regel toevoegen</span>
+            </Knop>
+            <Veld label="Voorrijkosten" type="number" value={o.voorrijkosten} onChange={(v) => wijzigOfferte(o.id, { voorrijkosten: v })} />
+            <p className="text-sm mt-2" style={{ color: INK }}>Totaal: {eur0(totaalSpoedopdracht)} excl. btw</p>
+          </Kaart>
+        </>
+      )}
+
+      <Kaart>
+        <TekstVeld breed label="Voorwaarden (één per regel; {geldigDagen} wordt vervangen)" rijen={5} value={o.voorwaarden}
+          onChange={(v) => wijzigOfferte(o.id, { voorwaarden: v })} />
+      </Kaart>
+
+      {/* Gerenderde offerte, printbaar */}
+      <Kaart>
+        <div className="flex items-center gap-2 mb-3">
+          <FileText size={16} style={{ color: ROZE }} />
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Offerte-document</h3>
+          <span className="ml-auto">
+            <Knop variant="wit" klein onClick={() => setPrintActief(true)}>Print / opslaan als pdf</Knop>
+          </span>
+        </div>
+        <div data-print-active={printActief} className="rounded-xl p-8"
+          style={{ background: "#FFFFFF", border: "1px solid #E4DEE9", fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="flex items-center justify-between mb-6">
+            <img src="/logo.png" alt="GumClean" style={{ height: 32 }} />
+            <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: "#FFE8F3", color: "#CC317B" }}>
+              OFFERTE · {o.offertenummer || "(nummer)"}
+            </span>
+          </div>
+          <h1 style={{ fontFamily: "Fredoka", fontWeight: 600, fontSize: "1.5rem", color: "#1A0A2E" }}>
+            {o.titel || (o.type === "spoedopdracht" ? "Spoedopdracht" : "0-beurt")}
+          </h1>
+          {o.samenvatting && <p style={{ color: "#6B6076" }}>{o.samenvatting}</p>}
+
+          <div className="grid grid-cols-2 gap-6 mt-5 text-sm" style={{ color: "#1A0A2E" }}>
+            <div>
+              <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Van</p>
+              <p style={{ fontWeight: 600 }}>GumClean</p>
+              <p>Antoni Hristov</p>
+              <p>{data.instellingen.thuisadres}</p>
+              <p>KvK 42082782 · 06 4221 0739</p>
+              <p>info@gumclean.nl</p>
+            </div>
+            <div>
+              <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Voor</p>
+              <p style={{ fontWeight: 600 }}>{o.voorNaam || k?.naam || "—"}</p>
+              {o.voorTav && <p>{o.voorTav}</p>}
+              {o.voorAdres && <p style={{ whiteSpace: "pre-line" }}>{o.voorAdres}</p>}
+              <p className="mt-2">Offertenummer {o.offertenummer || "—"}</p>
+              <p>Datum {o.datum ? datumNL(new Date(o.datum + "T00:00:00")) : "—"} · Geldig {o.geldigDagen} dagen</p>
+            </div>
+          </div>
+
+          {o.aanhef && <p className="mt-5" style={{ color: "#1A0A2E" }}>Geachte {o.aanhef}</p>}
+          {o.inleiding && <div className="mt-2"><TekstBlok tekst={o.inleiding} /></div>}
+
+          {o.type === "meerdere-panden" ? (
+            <>
+              <div className="mt-5"><OfferteSectie nummer={nrs.werkwijze} titel="Onze werkwijze"><TekstBlok tekst={o.werkwijze} /></OfferteSectie></div>
+              <OfferteSectie nummer={nrs.prijs} titel="Prijs per pand, 0-beurt">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ background: "#FAF7FB" }}>
+                        <th className="text-left px-3 py-2 font-medium">Pand</th>
+                        <th className="text-right px-3 py-2 font-medium">Mandagen</th>
+                        <th className="text-left px-3 py-2 font-medium">Hoogwerker</th>
+                        <th className="text-right px-3 py-2 font-medium">0-beurt</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {o.regels.map((r, i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid #E4DEE9" }}>
+                          <td className="px-3 py-2">{r.naam}</td>
+                          <td className="text-right px-3 py-2">{r.mandagen}</td>
+                          <td className="px-3 py-2" style={r.hoogwerker ? { fontWeight: 600, color: "#B45309" } : {}}>{r.hoogwerker ? "Ja" : "Nee"}</td>
+                          <td className="text-right px-3 py-2">{eur0(r.prijs)}</td>
+                        </tr>
+                      ))}
+                      <tr style={{ borderTop: "1.5px solid #E4DEE9" }}>
+                        <td className="px-3 py-2" style={{ fontWeight: 600 }}>Totaal 0-beurt ({o.regels.length} panden)</td>
+                        <td className="text-right px-3 py-2" style={{ fontWeight: 600 }}>{o.regels.reduce((s, r) => s + num(r.mandagen), 0)}</td>
+                        <td></td>
+                        <td className="text-right px-3 py-2" style={{ fontWeight: 600 }}>{eur0(totaalMeerderePanden)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs mt-2" style={{ color: "#6B6076" }}>Alle bedragen exclusief btw.</p>
+              </OfferteSectie>
+              {o.onderhoudContract && (
+                <OfferteSectie nummer={nrs.onderhoud} titel="Optioneel: onderhoudscontract">
+                  <p>Na de 0-beurt is elk pand schoon. Met periodiek onderhoud houdt u dat resultaat vast tegen
+                    een lager tarief van {data.instellingen.onderhoudsPercentage ?? 60}% van de 0-beurt per ronde.</p>
+                  <p className="mt-2" style={{ fontWeight: 600 }}>Onderhoudsronde: {eur0(onderhoudTotaal)} excl. btw</p>
+                </OfferteSectie>
+              )}
+              {o.lichtreclameOptie && (
+                <OfferteSectie nummer={nrs.lichtreclame} titel="Optie: lichtreclame reinigen">
+                  <p>Het reinigen van de lichtreclame nemen wij graag mee tijdens de beurt, voor {eur(o.lichtreclamePrijsPerPand)} per
+                    pand per keer (excl. btw). U kiest zelf of u deze optie afneemt.</p>
+                </OfferteSectie>
+              )}
+              <OfferteSectie nummer={nrs.watUKrijgt} titel="Wat u van ons krijgt">
+                <ul className="list-disc pl-4">
+                  {o.watUKrijgt.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}
+                </ul>
+              </OfferteSectie>
+            </>
+          ) : (
+            <>
+              {o.situatie && (
+                <OfferteSectie nummer={nrs.situatie} titel="De situatie">
+                  <ul className="list-disc pl-4">{o.situatie.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}</ul>
+                </OfferteSectie>
+              )}
+              {o.aanpak && (
+                <OfferteSectie nummer={nrs.aanpak} titel="Onze aanpak">
+                  <ol className="list-decimal pl-4">{o.aanpak.split("\n").filter(Boolean).map((r, i) => <li key={i} className="mb-1">{r}</li>)}</ol>
+                </OfferteSectie>
+              )}
+              {o.risicos && (
+                <OfferteSectie nummer={nrs.risicos} titel="Waar wij rekening mee houden">
+                  <ul className="list-disc pl-4">{o.risicos.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}</ul>
+                </OfferteSectie>
+              )}
+              <OfferteSectie nummer={nrs.prijs} titel="Prijs">
+                <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+                  <tbody>
+                    {o.prijsregels.map((x, i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid #E4DEE9" }}>
+                        <td className="px-3 py-2">{x.omschrijving}</td>
+                        <td className="text-right px-3 py-2">{eur(x.bedrag)}</td>
+                      </tr>
+                    ))}
+                    {num(o.voorrijkosten) > 0 && (
+                      <tr style={{ borderBottom: "1px solid #E4DEE9" }}>
+                        <td className="px-3 py-2">Voorrijkosten</td>
+                        <td className="text-right px-3 py-2">{eur(o.voorrijkosten)}</td>
+                      </tr>
+                    )}
+                    <tr>
+                      <td className="px-3 py-2" style={{ fontWeight: 600 }}>Totaal, excl. btw</td>
+                      <td className="text-right px-3 py-2" style={{ fontWeight: 600 }}>{eur(totaalSpoedopdracht)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </OfferteSectie>
+              {o.praktisch && (
+                <OfferteSectie nummer={nrs.praktisch} titel="Praktisch">
+                  <ul className="list-disc pl-4">{o.praktisch.split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}</ul>
+                </OfferteSectie>
+              )}
+            </>
+          )}
+
+          <OfferteSectie nummer={nrs.voorwaarden} titel="Voorwaarden">
+            <ul className="list-disc pl-4">
+              {o.voorwaarden.replace("{geldigDagen}", o.geldigDagen).split("\n").filter(Boolean).map((r, i) => <li key={i}>{r}</li>)}
+            </ul>
+          </OfferteSectie>
+
+          <OfferteSectie nummer={nrs.akkoord} titel="Akkoord">
+            <p className="mb-3">Gaat u akkoord? Bel of mail gerust bij vragen.</p>
+            {o.type === "meerdere-panden" ? (
+              <div className="space-y-1">
+                <p>☐ 0-beurt, {o.regels.length} panden ({eur0(totaalMeerderePanden)} excl. btw)</p>
+                {o.onderhoudContract && <p>☐ Optioneel onderhoudscontract ({eur0(onderhoudTotaal)} per ronde excl. btw)</p>}
+                {o.lichtreclameOptie && <p>☐ Optie lichtreclame reinigen ({eur(o.lichtreclamePrijsPerPand)} per pand per keer)</p>}
+              </div>
+            ) : (
+              <p>☐ Akkoord, totaal {eur(totaalSpoedopdracht)} excl. btw</p>
+            )}
+            <div className="grid grid-cols-2 gap-6 mt-5 text-sm">
+              <div>
+                <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Namens {o.voorNaam || k?.naam || "de klant"}</p>
+                <p>Naam:</p><p>Datum:</p><p>Handtekening:</p>
+              </div>
+              <div>
+                <p className="font-medium" style={{ fontFamily: "Fredoka" }}>Namens GumClean</p>
+                <p>Naam: Antoni Hristov</p><p>Datum:</p><p>Handtekening:</p>
+              </div>
+            </div>
+          </OfferteSectie>
+
+          <p className="text-xs mt-8 pt-3" style={{ color: "#6B6076", borderTop: "1px solid #E4DEE9" }}>
+            Antoni Hristov · gumclean.nl · 06 4221 0739 · info@gumclean.nl · KvK 42082782
+          </p>
+        </div>
+      </Kaart>
+
+      <Knop variant="wit" onClick={() => {
+        bewaar({ ...data, offertes: data.offertes.filter((x) => x.id !== o.id) });
+        setScherm({ naam: "offertes" });
+      }}>
+        <span className="flex items-center gap-1" style={{ color: "#8A7B98" }}><Trash2 size={13} /> Offerte verwijderen</span>
       </Knop>
     </div>
   );
@@ -1242,17 +1814,21 @@ export default function App() {
   const [bezig, setBezig] = useState(true);
   const [gekopieerd, setGekopieerd] = useState("");
 
+  // offertes bestond niet in eerder opgeslagen data — hier aanvullen zodat de
+  // rest van de app altijd een array mag verwachten.
+  const metDefaults = (d) => ({ offertes: [], ...d });
+
   useEffect(() => {
     (async () => {
       try {
         const r = await fetch("/api/data");
         if (!r.ok) throw new Error("api niet beschikbaar");
         const json = await r.json();
-        setData(json ?? START());
+        setData(json ? metDefaults(json) : START());
       } catch {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
-          setData(raw ? JSON.parse(raw) : START());
+          setData(raw ? metDefaults(JSON.parse(raw)) : START());
         } catch { setData(START()); }
       }
       setBezig(false);
@@ -1277,6 +1853,8 @@ export default function App() {
     bewaar({ ...data, panden: data.panden.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
   const wijzigKlant = (id, patch) =>
     bewaar({ ...data, klanten: data.klanten.map((k) => (k.id === id ? { ...k, ...patch } : k)) });
+  const wijzigOfferte = (id, patch) =>
+    bewaar({ ...data, offertes: data.offertes.map((o) => (o.id === id ? { ...o, ...patch } : o)) });
 
   const kopieer = (tekst, id) => {
     navigator.clipboard?.writeText(tekst);
@@ -1289,26 +1867,35 @@ export default function App() {
   const titel = scherm.naam === "pand"
     ? data.panden.find((p) => p.id === scherm.id)?.naam || "Opdracht"
     : scherm.naam === "klant" ? data.klanten.find((k) => k.id === scherm.id)?.naam || "Klant"
-    : scherm.naam === "export" ? "Export" : "Opdrachten";
+    : scherm.naam === "export" ? "Export"
+    : scherm.naam === "offertes" ? "Offertes"
+    : scherm.naam === "offerte" ? (data.offertes.find((o) => o.id === scherm.id)?.offertenummer || "Offerte")
+    : "Opdrachten";
+  const terug = scherm.naam === "offerte" ? "offertes" : "overzicht";
 
   return (
     <div className="min-h-screen p-6" style={{ background: PAPIER, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <div className="max-w-4xl mx-auto">
-        <header className="flex items-center gap-3 mb-6">
+        <header className="flex items-center gap-3 mb-6 flex-wrap">
           {scherm.naam !== "overzicht" && (
-            <button onClick={() => setScherm({ naam: "overzicht" })}
-              className="p-2 rounded-lg" style={{ background: "white", border: "1px solid #EDE6F2" }}>
+            <button onClick={() => setScherm({ naam: terug })}
+              className="p-2 rounded-lg shrink-0" style={{ background: "white", border: "1px solid #EDE6F2" }}>
               <ChevronLeft size={16} style={{ color: INK }} />
             </button>
           )}
-          <div className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-full inline-block" style={{ background: ROZE }} />
-            <span className="text-xl" style={{ fontFamily: "Fredoka", color: INK }}>{titel}</span>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="w-7 h-7 rounded-full inline-block shrink-0" style={{ background: ROZE }} />
+            <span className="text-xl truncate min-w-0" style={{ fontFamily: "Fredoka", color: INK }}>{titel}</span>
           </div>
-          <div className="ml-auto flex gap-2">
-            <Knop variant={scherm.naam === "overzicht" ? "geel" : "wit"} klein onClick={() => setScherm({ naam: "overzicht" })}>Opdrachten</Knop>
+          <div className="flex gap-2 shrink-0">
+            <Knop variant={scherm.naam === "overzicht" ? "geel" : "wit"} klein onClick={() => setScherm({ naam: "overzicht" })}>
+              <span className="flex items-center gap-1"><Truck size={13} /> <span className="hidden sm:inline">Opdrachten</span></span>
+            </Knop>
+            <Knop variant={scherm.naam === "offertes" || scherm.naam === "offerte" ? "geel" : "wit"} klein onClick={() => setScherm({ naam: "offertes" })}>
+              <span className="flex items-center gap-1"><FileText size={13} /> <span className="hidden sm:inline">Offertes</span></span>
+            </Knop>
             <Knop variant={scherm.naam === "export" ? "geel" : "wit"} klein onClick={() => setScherm({ naam: "export" })}>
-              <span className="flex items-center gap-1"><Settings size={13} /> Export</span>
+              <span className="flex items-center gap-1"><Settings size={13} /> <span className="hidden sm:inline">Export</span></span>
             </Knop>
           </div>
         </header>
@@ -1318,6 +1905,10 @@ export default function App() {
         {scherm.naam === "pand" && (
           <PandScherm id={scherm.id} data={data} wijzigPand={wijzigPand} bewaar={bewaar}
             setScherm={setScherm} gekopieerd={gekopieerd} kopieer={kopieer} />
+        )}
+        {scherm.naam === "offertes" && <OffertesScherm data={data} bewaar={bewaar} setScherm={setScherm} />}
+        {scherm.naam === "offerte" && (
+          <OfferteScherm id={scherm.id} data={data} wijzigOfferte={wijzigOfferte} bewaar={bewaar} setScherm={setScherm} />
         )}
         {scherm.naam === "export" && <ExportScherm data={data} bewaar={bewaar} gekopieerd={gekopieerd} kopieer={kopieer} />}
       </div>

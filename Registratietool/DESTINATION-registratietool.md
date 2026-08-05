@@ -63,6 +63,9 @@ Dezelfde data levert vier uitkomsten:
   (gevelreiniging, terreinreiniging, ramen, graffiti) en hoe vaak een
   onderhoudsbeurt daarna realistisch is, zodat ik een vervolgvoorstel kan
   onderbouwen in plaats van gokken.
+- Als Bas stel ik een offerte op vanuit de tool — meerdere panden in één
+  0-beurt-offerte met tabel, of een spoedopdracht voor één klus — en
+  exporteer die in GumClean-huisstijl, in plaats van los in Word te werken.
 - De data blijft bewaard tussen sessies.
 
 ## Key decisions
@@ -132,14 +135,44 @@ Dezelfde data levert vier uitkomsten:
   vol staan.** Minder vervuiling om weg te halen bij een vervolgbezoek, maar
   dezelfde rit. Puur een schatting voor het maken van een vervolgvoorstel —
   geen offerte, geen aparte nacalculatie zoals de 0-beurt zelf krijgt.
+- **Extra werkzaamheden buiten de offerte (graffiti, grofvuil, extra vieze
+  stoep — wat Anton er soms bij doet) tellen mee in de omzet als er een
+  bedrag bij staat.** Anders oogt de nacalculatie te negatief bij een klus met
+  extra's die wél gefactureerd worden. Bedrag is optioneel: zonder bedrag is
+  het puur een vermelding op het opleverrapport en de factuurregels.
+- **Een offerte snapshot't de pandregels bij het overnemen, in plaats van
+  live uit `cijfers()` te blijven berekenen.** Bij het bouwen bleek waarom dit
+  moet: de geaccepteerde opdracht wijkt soms af van wat oorspronkelijk
+  geoffreerd is (Drachten ging van 4 naar 6 mandagen na Udo's akkoord, zie
+  Open questions). Een live-gekoppelde offerte zou dat met terugwerkende
+  kracht stilletjes herschrijven — een verstuurde offerte moet een
+  historisch document blijven, ook als het pand daarna verandert.
+- **Twee offertetypes met heel verschillende vorm: meerdere panden
+  (tabel, uit tooldata) en spoedopdracht (situatie/aanpak/risico's, vrije
+  tekst).** Bleek uit de bestaande offertes in `/offertes` — een 0-beurt voor
+  meerdere panden is bijna volledig data-gedreven, een spoedopdracht is
+  grotendeels een verhaal dat Bas zelf schrijft. Eén sjabloon voor beide had
+  het een van de twee slecht laten passen.
+- **Offerte en opleverrapport/werkbeschrijving blijven allebei achter de
+  wachtwoordpoort, geen publieke deelbare links.** Zelfde afweging als
+  eerder bij de foto's: kleinste beveiligingsoppervlak, Bas is de
+  tussenpersoon (printen, kopiëren, appen, mailen).
 
 ## Explicitly out of scope
 
 - Koppeling met Jortt. Facturen blijven daar; deze tool levert alleen de regels.
 - Live routeplanner of Maps-API.
 - Toegang voor Anton, inlog, gebruikersbeheer.
-- Voorraadbeheer, offertegeneratie, urenregistratie voor derden.
+- Voorraadbeheer, urenregistratie voor derden.
 - Automatische btw-berekening of aangifte.
+- Deelbare publieke offerte-/rapportlinks zonder wachtwoord (zie ook
+  werkbeschrijving/opleverrapport hierboven) — Bas blijft de tussenpersoon.
+
+**Was hier tot 2026-08-05 uitgesloten, nu wél gebouwd: offertegeneratie.** Bas
+maakte offertes tot dan toe los in Word (zie `/offertes` in de hoofdrepo).
+Aanleiding om dat om te draaien: hij vroeg er expliciet om, en de meerdere-
+panden-offerte bleek bijna letterlijk de data die al in de tool zit
+(pand × mandagen × hoogwerker × dagtarief). Zie "Offertes" hieronder.
 
 ## Open questions
 
@@ -150,6 +183,9 @@ Dezelfde data levert vier uitkomsten:
 - Welke van de negen panden onder welke route vallen. Leek (filiaal 1048),
   Drachten (filiaal 1021, beide eigen vastgoed) en Geldrop (huur, filiaal
   1441) zijn bevestigd, met filiaalnummer en adres. De rest nog na te vragen.
+- ~~Discrepantie Drachten~~ — bevestigd: na offerte 2026-002 (4 mandagen,
+  € 2.160) is Drachten opgehoogd naar 6 mandagen (€ 3.240), conform Udo's
+  opdrachtbevestiging van 27-07-2026. `START()` staat nu op 6.
 - Werkelijke afstanden per pand. Nu schattingen vanaf Manenburgdreef 93.
 - Overschrijving bus van B.J. Hof naar Anton privé is nog niet gedaan.
 - Klopt de vermogensetikettering fiscaal? Laten toetsen door de boekhouder

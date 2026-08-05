@@ -119,6 +119,8 @@ pand           klantId, routeId, naam, adres, filiaalnummer, grootboek,
   ├ uren       datum, uren, omschrijving
   ├ ritten     datum, km, type (zakelijk|prive), doel
   ├ materieel  array van labels
+  ├ extraWerkzaamheden  { omschrijving, bedrag } — buiten de offerte gedaan
+  │                        (graffiti, grofvuil...), bedrag telt mee in omzet
   ├ voorFotos  { id, pathname } — foto's van Udo, wat er moet gebeuren
   ├ naFotos    { id, pathname } — foto's van het opgeleverde werk
   └ verbruik   omschrijving, aantal, prijs
@@ -170,6 +172,7 @@ rechtstreeks.
 
 ```
 omzet      = (begrootMandagen × dagtarief, of × dagtarief/8 als uren) + voorrijkosten
+             + extraOmzet (som van extraWerkzaamheden[].bedrag — werk buiten de offerte)
 reiskosten = zakelijke km × 0,25
 marge      = omzet − reiskosten − verbruik      ← fiscaal relevant
 arbeid     = effectieve uren × uurloon           ← rekenprijs, geen kostenpost
@@ -294,6 +297,49 @@ Beide printen via `window.print()`, met een CSS-regel in `index.css`
 (`[data-print-active="true"]`) die de rest van de pagina onzichtbaar maakt
 zodat alleen het aangeklikte document op papier (of in de "opslaan als pdf"-
 dialoog) komt.
+
+## Offertes
+
+`data.offertes` staat plat naast `data.panden`, met een `klantId` — zelfde
+patroon. Twee types (`offerte.type`), qua vorm en databehoefte compleet
+verschillend, gebaseerd op de bestaande offertes in `/offertes` in de
+hoofdrepo:
+
+- **`meerdere-panden`** — een 0-beurt-offerte voor meerdere panden van één
+  klant, zoals offerte 2026-002 (9 Action-panden). Kies panden aan op het
+  offerte-scherm, klik "Regels overnemen": dat zet mandagen, hoogwerker-vlag
+  en prijs (`omzetBasis` uit `cijfers()`) over in `offerte.regels` — een
+  **momentopname**, geen live koppeling. Reden: de uiteindelijk geaccepteerde
+  opdracht wijkt soms af van de offerte (zie de Drachten-discrepantie in
+  DESTINATION-registratietool.md), en een live-berekende offerte zou zo'n
+  latere pandwijziging met terugwerkende kracht in een al verstuurd document
+  laten verschijnen. Optionele secties (onderhoudscontract, lichtreclame)
+  aan/uit per offerte.
+- **`spoedopdracht`** — een eenmalige klus voor één pand/klant, zoals offerte
+  2026-003 (verfvlekken Geldrop). Grotendeels vrije tekst (`situatie`,
+  `aanpak`, `risicos`, `praktisch`) — dat schrijft Bas zelf, elke situatie is
+  anders. Prijs is een losse regelslijst (`prijsregels`, net als
+  `extraWerkzaamheden` op het pand) plus `voorrijkosten`, niet gekoppeld aan
+  een pand se `begrootMandagen`.
+
+Sectienummers in het gerenderde document (`nrs` in `OfferteScherm`) worden
+doorgeteld i.p.v. hardgecodeerd, want optionele secties (onderhoudscontract,
+lichtreclame, of lege vrije-tekstvelden bij een spoedopdracht) verschuiven de
+nummering — een vast nummer zou gaten of dubbele nummers geven zodra niet
+alle secties getoond worden.
+
+Offertenummers zijn doorlopend per jaar (`2026-001`, `2026-002`...),
+`volgendOffertenummer()` pakt het hoogste bestaande nummer van het huidige
+jaar + 1.
+
+Opmaak volgt `gumclean-design-system-v2.md`, inclusief het genummerde
+sectiekop-blok (`OfferteSectie`, roze nummerblok + titel — §4) en de
+prijstabel-conventies uit §5 (header-rij lichte achtergrond, hoogwerker "Ja"
+vet + `semantic/warning`-kleur, bedragen rechts uitgelijnd, altijd "excl.
+btw"). Akkoordblok met ☐-checkboxes en een handtekeningvak per partij, net
+als in de Word-versie — maar puur getypte tekst/print, geen digitale
+handtekening. Print/pdf-export via hetzelfde `data-print-active`-mechanisme
+als het opleverrapport.
 
 ## Startdata
 

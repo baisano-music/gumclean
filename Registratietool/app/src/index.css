@@ -20,4 +20,11 @@
     top: 0;
     width: 100%;
   }
+  /* Zonder dit knipt de browser een foto (of het bijschrift eronder) precies
+     op een paginagrens doormidden — dat oogde als "een foto te veel", want de
+     rest van die foto verscheen dan boven op de volgende pagina. */
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }
