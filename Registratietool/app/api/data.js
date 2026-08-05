@@ -24,6 +24,11 @@ export async function POST(request) {
   if (!isAuthorized(request)) return unauthorizedResponse();
 
   const body = await request.text();
+  try {
+    JSON.parse(body);
+  } catch {
+    return new Response("Ongeldige JSON", { status: 400 });
+  }
   await put(PATHNAME, body, {
     access: "private",
     addRandomSuffix: false,

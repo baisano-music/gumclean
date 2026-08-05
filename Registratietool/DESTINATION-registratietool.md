@@ -51,6 +51,18 @@ Dezelfde data levert vier uitkomsten:
   oplevert.
 - Als Bas kopieer ik de factuurregels met de juiste tenaamstelling naar Jortt.
 - Als Bas exporteer ik een kilometerstaat voor de aangifte.
+- Als Bas vul ik een startdatum en reispatroon per pand in, zodat ik zie wanneer
+  een klus ongeveer klaar is — voor Anton's planning, inclusief de reistijd die
+  anders wordt vergeten.
+- Als Bas zet ik Udo's voor-foto's en instructies om in een werkbeschrijving die
+  Anton alles geeft wat hij nodig heeft: waar, bij wie melden, wat meenemen,
+  wat er moet gebeuren.
+- Als Bas maak ik na afloop, met de na-foto's, een opleverrapport in
+  GumClean-huisstijl om naar Udo/de klant te sturen.
+- Als Bas geef ik per pand aan welke diensten de 0-beurt omvatte
+  (gevelreiniging, terreinreiniging, ramen, graffiti) en hoe vaak een
+  onderhoudsbeurt daarna realistisch is, zodat ik een vervolgvoorstel kan
+  onderbouwen in plaats van gokken.
 - De data blijft bewaard tussen sessies.
 
 ## Key decisions
@@ -94,8 +106,32 @@ Dezelfde data levert vier uitkomsten:
 - **Opbrengst rekent met begrote mandagen, niet met werkelijke.** Dat is wat er
   gefactureerd wordt. Uitloop hoort in het resultaat te landen, niet in een
   opgeblazen omzet.
+- **Reispatroon (dagelijks forenzen of in de buurt overnachten) staat per pand,
+  niet als één vaste regel.** Verschilt te veel per klus om globaal te zetten —
+  dichtbij forenst Anton altijd, ver weg wisselt het. Reistijd komt bij
+  "dagelijks" elke werkdag terug (heen én terug), bij "overnachten" maar één
+  keer voor de hele klus. Anton's starttijd (08:30) en pauze (30 min)
+  veranderen de 8 werkbare uren zelf niet — ze bepalen alleen hóe laat die
+  vallen, dus die twee tellen niet apart mee in de berekening. Vuistregel op
+  basis van een aanneembare reissnelheid (standaard 80 km/h, instelbaar), geen
+  exacte routeplanning — past bij de eerdere beslissing om ook kilometers uit
+  een vaste tabel te halen in plaats van een live routeplanner.
 - **Eén React-bestand met browseropslag.** Bas is de enige gebruiker, dus een
   database is nu overinvesteren.
+- **Werkbeschrijving en opleverrapport blijven achter de wachtwoordpoort, geen
+  deelbare publieke links.** Bas stuurt ze zelf door (kopiëren, printen naar
+  pdf, appen) — kleinste beveiligingsoppervlak, geen nieuwe publieke pagina's
+  nodig. Foto's zijn om dezelfde reden ook private Blob-opslag, nooit publiek.
+- **Het opleverrapport volgt `gumclean-design-system-v2.md`, niet het interne
+  roze/paarse palet van de rest van de tool.** Die twee lijken op elkaar maar
+  zijn niet gelijk (het interne palet heeft geen AA-veilige `pink-interactive`
+  variant en een net iets ander groen) — een klantdocument moet het echte,
+  canonieke merk zijn, de tool zelf mag intern afwijken.
+- **Een onderhoudsbeurt is een vuistregel-percentage van het werk van de
+  0-beurt (standaard 60%, instelbaar), reiskosten en voorrijkosten blijven
+  vol staan.** Minder vervuiling om weg te halen bij een vervolgbezoek, maar
+  dezelfde rit. Puur een schatting voor het maken van een vervolgvoorstel —
+  geen offerte, geen aparte nacalculatie zoals de 0-beurt zelf krijgt.
 
 ## Explicitly out of scope
 
@@ -107,10 +143,13 @@ Dezelfde data levert vier uitkomsten:
 
 ## Open questions
 
-- Tenaamstelling, adres en btw-nummer van Action's vastgoedroute
-  (APinvoiceVGWI@action.eu) — uitstaand bij Udo Blauw.
-- Welke van de negen panden onder welke route vallen. Alleen Leek en Drachten
-  (eigen vastgoed) en Geldrop (huur, filiaal 1441) zijn bevestigd.
+- Btw-nummer van Action's vastgoedroute (APinvoiceVGWI@action.eu) — nog
+  uitstaand bij Udo Blauw. Tenaamstelling ("Action OG Winkels BV", t.a.v.
+  Financiële administratie) en adres (Perenmarkt 15, 1681 PG Zwaagdijk) zijn
+  inmiddels wel bekend en staan in `START()`.
+- Welke van de negen panden onder welke route vallen. Leek (filiaal 1048),
+  Drachten (filiaal 1021, beide eigen vastgoed) en Geldrop (huur, filiaal
+  1441) zijn bevestigd, met filiaalnummer en adres. De rest nog na te vragen.
 - Werkelijke afstanden per pand. Nu schattingen vanaf Manenburgdreef 93.
 - Overschrijving bus van B.J. Hof naar Anton privé is nog niet gedaan.
 - Klopt de vermogensetikettering fiscaal? Laten toetsen door de boekhouder

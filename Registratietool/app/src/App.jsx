@@ -28,7 +28,7 @@ const VERBRUIK_OPTIES = [
 ];
 
 const LEEG_ROUTE = () => ({
-  id: crypto.randomUUID(), naam: "", tenaamstelling: "", adres: "",
+  id: crypto.randomUUID(), naam: "", tenaamstelling: "", tav: "", adres: "",
   btw: "", email: "", notitie: ""
 });
 
@@ -43,30 +43,44 @@ const LEEG_PAND = (klantId) => ({
   begrootMandagen: 0, begrootEenheid: "dag", voorrijkosten: 0,
   werkelijkeMandagen: 0, werkelijkeEenheid: "dag", afstandEnkel: 0,
   hoogwerker: false, doorbelast: 0, status: "open",
+  startdatum: "", reispatroon: "dagelijks",
+  soortWerk: "Groot onderhoud", werkzaamheden: "", diensten: [],
+  onderhoudsintervalMaanden: 0,
+  contactpersoonTerPlaatse: "", telefoonTerPlaatse: "", instructies: "",
+  voorOmschrijving: "", voorFotos: [], naFotos: [], afgerondOp: "",
   materieel: [], uren: [], ritten: [], verbruik: []
 });
 
 const START = () => {
   const action = { ...LEEG_KLANT(), naam: "Action Nederland B.V.", contactpersoon: "Udo Blauw", kvk: "", dagtarief: 540, uurloon: 25, betaaltermijn: 60 };
-  const rA = { ...LEEG_ROUTE(), naam: "Eigen vastgoed (OG-winkels)", email: "APinvoiceVGWI@action.eu", notitie: "Tenaamstelling nog opvragen bij Udo" };
+  const rA = { ...LEEG_ROUTE(), naam: "Eigen vastgoed (OG-winkels)", email: "APinvoiceVGWI@action.eu",
+    tenaamstelling: "Action OG Winkels BV", tav: "Financiële administratie", adres: "Perenmarkt 15, 1681 PG Zwaagdijk",
+    notitie: "Btw-nummer nog opvragen bij Udo" };
   const rB = { ...LEEG_ROUTE(), naam: "Huurpanden (Store Facility)", email: "InvoiceNL@action.nl",
     tenaamstelling: "Action Nederland BV", adres: "Perenmarkt 15, 1681 PG Zwaagdijk-Oost", btw: "NL813233409B01",
     notitie: "Pdf 300 dpi, kostenplaats en contactpersoon verplicht" };
   action.routes = [rA, rB];
 
   const p = (naam, md, km, hw, routeId = "", extra = {}) => ({
-    ...LEEG_PAND(action.id), naam, begrootMandagen: md, afstandEnkel: km, hoogwerker: hw, routeId, ...extra
+    ...LEEG_PAND(action.id), naam, begrootMandagen: md, afstandEnkel: km, hoogwerker: hw, routeId,
+    grootboek: "Omzet Gevelreiniging", ...extra
   });
 
   const panden = [
     p("Spakenburg (UT)", 3, 55, false),
     p("Zwaagdijk (NH)", 6, 50, true),
     p("Wolvega (FR)", 6, 135, true),
-    p("Drachten (FR)", 4, 165, true, rA.id),
+    p("Drachten (FR)", 4, 165, true, rA.id, {
+      filiaalnummer: "1021", adres: "Moleneind ZZ 63, 9203 ZW Drachten",
+      werkzaamheden: "Reinigen gevel, en graffiti op gebouw", diensten: ["Gevelreiniging", "Graffitiverwijdering"],
+    }),
     p("Surhuisterveen (FR)", 6, 175, true),
     p("Dokkum (FR)", 8, 175, true),
     p("Uithuizen (GR)", 3, 215, false),
-    p("Leek (GR)", 4, 170, false, rA.id),
+    p("Leek (GR)", 4, 170, false, rA.id, {
+      filiaalnummer: "1048", adres: "Synagogeplein 34, 9351 AW Leek",
+      werkzaamheden: "Reinigen gevel, en graffiti op gebouw", diensten: ["Gevelreiniging", "Graffitiverwijdering"],
+    }),
     p("Assen (DR)", 4, 180, true),
     p("Geldrop (NB)", 6, 135, false, rB.id, { filiaalnummer: "1441", begrootEenheid: "uur", voorrijkosten: 195 }),
   ];
@@ -76,7 +90,7 @@ const START = () => {
     instellingen: {
       thuisadres: "Manenburgdreef 93, 2135 GV Hoofddorp", dieselprijs: 1.95, verbruik: 8.5,
       btwPercentage: 21, reserveringAov: 0, reserveringPensioen: 0, reserveringWeer: 0, reserveringInvestering: 0,
-      reserveringBelasting: 0
+      reserveringBelasting: 0, reissnelheid: 80, werkurenPerDag: 8, onderhoudsPercentage: 60
     }
   };
 };
@@ -85,6 +99,33 @@ const STORAGE_KEY = "gumclean:registratie:v1";
 const eur = (n) => "€ " + (n || 0).toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const eur0 = (n) => "€ " + Math.round(n || 0).toLocaleString("nl-NL");
 const num = (v) => (v === "" || v === null || v === undefined ? 0 : Number(v) || 0);
+const datumNL = (d) => d ? d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }) : "";
+
+// Telt aantal werkdagen (ma–vr) op bij een startdatum, en rolt een startdatum die
+// zelf in het weekend valt eerst door naar de eerstvolgende maandag.
+const berekenEinddatum = (startdatum, werkdagenNodig) => {
+  if (!startdatum || !isFinite(werkdagenNodig) || werkdagenNodig <= 0) return null;
+  const d = new Date(startdatum + "T00:00:00");
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+  let geteld = 1;
+  while (geteld < werkdagenNodig) {
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() !== 0 && d.getDay() !== 6) geteld++;
+  }
+  return d;
+};
+
+// Verkleint en comprimeert een foto in de browser vóór upload — telefoonfoto's
+// zijn al snel 5-10 MB, en die hoeft niemand ongewijzigd in Blob-opslag te zetten.
+async function comprimeerAfbeelding(file, maxAfmeting = 1600, kwaliteit = 0.8) {
+  const bitmap = await createImageBitmap(file);
+  const schaal = Math.min(1, maxAfmeting / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * schaal);
+  canvas.height = Math.round(bitmap.height * schaal);
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", kwaliteit));
+}
 
 // ---- data helpers: puur, nemen `data` expliciet mee i.p.v. closure ----
 const klantVan = (data, p) => data.klanten.find((k) => k.id === p.klantId);
@@ -96,6 +137,7 @@ const controle = (data, p) => {
   const punten = [
     { v: !!k?.naam, t: "Klantnaam" },
     { v: !!p.naam, t: "Pandnaam" },
+    { v: !!p.adres, t: "Pandadres" },
     { v: !!p.routeId, t: "Factuurroute gekozen" },
     { v: !!r?.tenaamstelling, t: "Tenaamstelling factuurroute" },
     { v: !!r?.adres, t: "Factuuradres" },
@@ -107,6 +149,7 @@ const controle = (data, p) => {
     { v: num(p.begrootMandagen) > 0, t: "Afgesproken offerte (mandagen/uren)" },
     { v: num(p.afstandEnkel) > 0, t: "Afstand enkele reis" },
     { v: p.materieel.length > 0, t: "Materieellijst" },
+    { v: !!p.werkzaamheden, t: "Uitgevoerde werkzaamheden" },
   ];
   return { punten, ontbreekt: punten.filter((x) => !x.v) };
 };
@@ -161,6 +204,36 @@ const cijfers = (data, p) => {
   const reserveringTotaal = reservering + reserveringBelasting;
   const nettoBeschikbaar = resultaat - reserveringTotaal;
 
+  // Planning: hoeveel werkdagen heeft Anton nodig, rekening houdend met reistijd?
+  // Werkdag = 8 uur werk (los van de 08:30-starttijd en pauze, die veranderen de
+  // beschikbare 8 uur niet). Bij "dagelijks" gaat de heen-en-terugreis er iedere
+  // dag vanaf; bij "overnachten" (blijft in de buurt) telt de reis maar één keer
+  // mee voor de hele klus, verdeeld over de benodigde dagcapaciteit.
+  const werkurenPerDag = num(data.instellingen.werkurenPerDag) || 8;
+  const reissnelheid = num(data.instellingen.reissnelheid) || 80;
+  const reistijdEnkeleReis = num(p.afstandEnkel) / reissnelheid;
+  const totaleWerkurenNodig = begroteMandagen * 8;
+  let werkdagenNodig = 0;
+  if (totaleWerkurenNodig > 0) {
+    if (p.reispatroon === "overnachten") {
+      werkdagenNodig = Math.ceil((totaleWerkurenNodig + 2 * reistijdEnkeleReis) / werkurenPerDag);
+    } else {
+      const effectieveUrenPerDag = Math.max(0, werkurenPerDag - 2 * reistijdEnkeleReis);
+      werkdagenNodig = effectieveUrenPerDag > 0 ? Math.ceil(totaleWerkurenNodig / effectieveUrenPerDag) : Infinity;
+    }
+  }
+  const verwachteEinddatum = berekenEinddatum(p.startdatum, werkdagenNodig);
+
+  // Onderhoudsbeurt: een vervolgbezoek na de 0-beurt kost minder werk (minder
+  // vervuiling om weg te halen) maar evenveel reistijd — dus alleen het
+  // werk-aandeel van de omzet schaalt mee met het percentage, reiskosten en
+  // voorrijkosten blijven vol staan (nieuwe rit, nieuwe afspraak).
+  const onderhoudsPercentage = num(data.instellingen.onderhoudsPercentage) || 60;
+  const onderhoudMandagen = begroteMandagen * (onderhoudsPercentage / 100);
+  const onderhoudOmzet = omzetBasis * (onderhoudsPercentage / 100) + voorrijkosten;
+  const onderhoudBeurtenPerJaar = num(p.onderhoudsintervalMaanden) > 0 ? 12 / num(p.onderhoudsintervalMaanden) : 0;
+  const onderhoudOmzetPerJaar = onderhoudOmzet * onderhoudBeurtenPerJaar;
+
   return {
     tarief, uurloon, gewerkteUren, effectieveUren, mandagenWerkelijk: effectieveUren / 8, kmZakelijk, kmPrive,
     materiaal, omzetBasis, voorrijkosten, omzet, reiskosten, arbeid, kosten, marge, resultaat, liters,
@@ -171,6 +244,8 @@ const cijfers = (data, p) => {
     pctAov, pctPensioen, pctWeer, pctInvestering, pctBelasting, btwPercentage, omzetInclBtw,
     reserveringAov, reserveringPensioen, reserveringWeer, reserveringInvestering, reserveringBelasting,
     reservering, reserveringBtw, reserveringTotaal, nettoBeschikbaar,
+    reistijdEnkeleReis, werkdagenNodig, verwachteEinddatum,
+    onderhoudsPercentage, onderhoudMandagen, onderhoudOmzet, onderhoudBeurtenPerJaar, onderhoudOmzetPerJaar,
   };
 };
 
@@ -228,6 +303,53 @@ function Kaart({ children, className = "" }) {
   return <div className={"rounded-2xl p-5 " + className} style={{ background: "white", border: "1px solid #EDE6F2" }}>{children}</div>;
 }
 
+// Grid met geüploade foto's (voor of na), elk met een eigen omschrijving.
+// Beeld komt uit de privé Blob-opslag via /api/fotos — de browser stuurt de
+// Basic Auth die al voor de pagina zelf is ingevoerd automatisch mee bij het
+// laden van <img>. Zonder onVerwijder/onOmschrijving is de grid read-only
+// (voor in de werkbeschrijving-preview); de omschrijving staat er dan als
+// platte tekst i.p.v. een invoerveld.
+function FotoGrid({ fotos, onVerwijder, onOmschrijving }) {
+  if (!fotos.length) return null;
+  return (
+    <div className="grid grid-cols-3 gap-2 mt-2">
+      {fotos.map((f) => (
+        <div key={f.id} className="relative">
+          <img src={"/api/fotos?pad=" + encodeURIComponent(f.pathname)} alt=""
+            className="w-full aspect-square object-cover rounded-lg" style={{ border: "1px solid #E4DCEA" }} />
+          {onVerwijder && (
+            <button onClick={() => onVerwijder(f)}
+              className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(26,10,46,.7)" }}>
+              <Trash2 size={12} color="white" />
+            </button>
+          )}
+          {onOmschrijving ? (
+            <input value={f.omschrijving ?? ""} placeholder="omschrijving bij deze foto"
+              onChange={(e) => onOmschrijving(f, e.target.value)}
+              className="w-full mt-1 px-2 py-1 rounded text-xs outline-none border"
+              style={{ borderColor: "#E4DCEA", background: "white", color: INK }} />
+          ) : f.omschrijving ? (
+            <p className="text-xs mt-1" style={{ color: "#6B5B7B" }}>{f.omschrijving}</p>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FotoUpload({ label, bezig, onFiles }) {
+  return (
+    <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs cursor-pointer"
+      style={{ background: "#F5EFF8", color: INK }}>
+      <Package size={13} />
+      {bezig ? "Uploaden…" : label}
+      <input type="file" accept="image/*" multiple capture="environment" className="hidden" disabled={bezig}
+        onChange={(e) => { if (e.target.files.length) onFiles(e.target.files); e.target.value = ""; }} />
+    </label>
+  );
+}
+
 // =================== OVERZICHT ===================
 function Overzicht({ data, setScherm, bewaar }) {
   const totaal = data.panden.reduce((s, p) => s + cijfers(data, p).omzet, 0);
@@ -278,6 +400,12 @@ function Overzicht({ data, setScherm, bewaar }) {
                       <span className="block text-xs truncate" style={{ color: "#8A7B98" }}>
                         {ok ? "Compleet" : c.ontbreekt.length + " ontbreekt: " + c.ontbreekt.map((x) => x.t).join(", ")}
                       </span>
+                      {p.startdatum && (
+                        <span className="block text-xs truncate" style={{ color: "#8A7B98" }}>
+                          Start {datumNL(new Date(p.startdatum + "T00:00:00"))}
+                          {g.verwachteEinddatum && " · verwacht klaar " + datumNL(g.verwachteEinddatum)}
+                        </span>
+                      )}
                     </span>
                     <span className="text-right shrink-0">
                       <span className="block text-sm" style={{ color: INK }}>{eur0(g.omzet)}</span>
@@ -370,6 +498,7 @@ function KlantScherm({ id, data, wijzigKlant }) {
                   <Veld label="Naam route" value={r.naam} onChange={(v) => zetRoute(r.id, { naam: v })} />
                   <Veld label="Factuur-mailadres" value={r.email} onChange={(v) => zetRoute(r.id, { email: v })} />
                   <Veld label="Tenaamstelling" value={r.tenaamstelling} onChange={(v) => zetRoute(r.id, { tenaamstelling: v })} />
+                  <Veld label="T.a.v." value={r.tav} onChange={(v) => zetRoute(r.id, { tav: v })} />
                   <Veld label="Btw-nummer" value={r.btw} onChange={(v) => zetRoute(r.id, { btw: v })} />
                   <Veld breed label="Factuuradres" value={r.adres} onChange={(v) => zetRoute(r.id, { adres: v })} />
                   <Veld breed label="Notitie" value={r.notitie} onChange={(v) => zetRoute(r.id, { notitie: v })} />
@@ -390,8 +519,12 @@ function KlantScherm({ id, data, wijzigKlant }) {
 
 // =================== PAND ===================
 function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopieer }) {
-  const p = data.panden.find((x) => x.id === id);
-  if (!p) return null;
+  const pRaw = data.panden.find((x) => x.id === id);
+  if (!pRaw) return null;
+  // Panden opgeslagen vóór nieuwe velden (bv. voorFotos/naFotos) bestonden
+  // missen die anders — hier aanvullen met de standaardwaarden uit LEEG_PAND,
+  // zonder de bestaande data te overschrijven.
+  const p = { ...LEEG_PAND(pRaw.klantId), ...pRaw };
   const k = klantVan(data, p), r = routeVan(data, p);
   const c = controle(data, p), g = cijfers(data, p);
   const ok = c.ontbreekt.length === 0;
@@ -401,15 +534,57 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
     wijzigPand(p.id, { [veld]: p[veld].map((x, j) => (j === i ? { ...x, ...patch } : x)) });
   const weg = (veld, i) => wijzigPand(p.id, { [veld]: p[veld].filter((_, j) => j !== i) });
 
+  const [uploadBezig, setUploadBezig] = useState(false);
+  const [printKaart, setPrintKaart] = useState(null);
+  useEffect(() => {
+    if (!printKaart) return;
+    const t = setTimeout(() => window.print(), 50);
+    const reset = () => setPrintKaart(null);
+    window.addEventListener("afterprint", reset);
+    return () => { clearTimeout(t); window.removeEventListener("afterprint", reset); };
+  }, [printKaart]);
+
+  const uploadFotos = async (type, files) => {
+    const veld = type === "voor" ? "voorFotos" : "naFotos";
+    setUploadBezig(true);
+    const nieuw = [];
+    try {
+      for (const file of files) {
+        const blob = await comprimeerAfbeelding(file);
+        const res = await fetch("/api/fotos?pandId=" + p.id + "&type=" + type, {
+          method: "POST", headers: { "Content-Type": "image/jpeg" }, body: blob,
+        });
+        if (res.ok) nieuw.push({ id: crypto.randomUUID(), pathname: (await res.json()).pathname, omschrijving: "" });
+      }
+    } finally {
+      setUploadBezig(false);
+    }
+    if (nieuw.length) wijzigPand(p.id, { [veld]: [...p[veld], ...nieuw] });
+  };
+  const verwijderFoto = async (type, foto) => {
+    const veld = type === "voor" ? "voorFotos" : "naFotos";
+    wijzigPand(p.id, { [veld]: p[veld].filter((f) => f.id !== foto.id) });
+    await fetch("/api/fotos?pad=" + encodeURIComponent(foto.pathname), { method: "DELETE" });
+  };
+  const wijzigFotoOmschrijving = (type, foto, omschrijving) => {
+    const veld = type === "voor" ? "voorFotos" : "naFotos";
+    wijzigPand(p.id, { [veld]: p[veld].map((f) => (f.id === foto.id ? { ...f, omschrijving } : f)) });
+  };
+
   const begroteEenheidUur = p.begrootEenheid === "uur";
   const factuurtekst = [
     r?.tenaamstelling || "[tenaamstelling ontbreekt]",
+    r?.tav ? "T.a.v. " + r.tav : "",
     r?.adres || "[factuuradres ontbreekt]",
     "Btw: " + (r?.btw || "[btw ontbreekt]"),
     "",
     "Pand: " + p.naam + (p.filiaalnummer ? " · filiaalnummer " + p.filiaalnummer : ""),
+    "Pandadres: " + (p.adres || "[pandadres ontbreekt]"),
     "Grootboek: " + (p.grootboek || "[grootboeknummer ontbreekt]"),
-    "Contactpersoon: " + (k?.contactpersoon || "[onbekend]"),
+    "Soort werk: " + (p.soortWerk || "[soort werk ontbreekt]"),
+    "Opdrachtgever: " + (k?.contactpersoon || "[onbekend]"),
+    "",
+    "Uitgevoerde werkzaamheden: " + (p.werkzaamheden || "[werkzaamheden ontbreekt]"),
     "",
     p.begrootMandagen + (begroteEenheidUur ? " uur à " + eur0(g.tarief / 8) : " mandagen à " + eur0(g.tarief))
       + (num(p.voorrijkosten) > 0 ? " + " + eur(p.voorrijkosten) + " voorrijkosten" : "")
@@ -465,6 +640,23 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
           </label>
           <Veld label="Filiaalnummer" value={p.filiaalnummer} onChange={(v) => wijzigPand(p.id, { filiaalnummer: v })} />
           <Veld label="Grootboeknummer" value={p.grootboek} onChange={(v) => wijzigPand(p.id, { grootboek: v })} />
+          <Veld label="Soort werk" value={p.soortWerk} onChange={(v) => wijzigPand(p.id, { soortWerk: v })} />
+          <Veld breed label="Uitgevoerde werkzaamheden" value={p.werkzaamheden} onChange={(v) => wijzigPand(p.id, { werkzaamheden: v })} />
+          <div className="col-span-2">
+            <span className="block text-xs mb-1" style={{ color: "#6B5B7B" }}>Diensten (0-beurt)</span>
+            <div className="flex flex-wrap gap-2">
+              {["Gevelreiniging", "Terreinreiniging (stoep)", "Winkelpui/ramen reinigen", "Graffitiverwijdering"].map((t) => {
+                const aan = p.diensten.includes(t);
+                return (
+                  <button key={t} onClick={() => wijzigPand(p.id, { diensten: aan ? p.diensten.filter((x) => x !== t) : [...p.diensten, t] })}
+                    className="px-3 py-1.5 rounded-full text-xs transition"
+                    style={aan ? { background: INK, color: "white" } : { background: "#F5EFF8", color: "#6B5B7B" }}>
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <Veld label="Afstand enkele reis (km)" type="number" value={p.afstandEnkel} onChange={(v) => wijzigPand(p.id, { afstandEnkel: v })} />
           <MandagenOfUrenVeld breed label="Afgesproken offerte: mandagen of uren"
             waarde={p.begrootMandagen} eenheid={p.begrootEenheid}
@@ -484,6 +676,50 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
         </label>
       </Kaart>
 
+      {/* Planning */}
+      <Kaart>
+        <div className="flex items-center gap-2 mb-3">
+          <Clock size={16} style={{ color: ROZE }} />
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Planning</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Veld label="Startdatum" type="date" value={p.startdatum} onChange={(v) => wijzigPand(p.id, { startdatum: v })} />
+          <label className="block">
+            <span className="block text-xs mb-1" style={{ color: "#6B5B7B" }}>Reispatroon</span>
+            <select value={p.reispatroon} onChange={(e) => wijzigPand(p.id, { reispatroon: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none border"
+              style={{ borderColor: "#E4DCEA", background: "white", color: INK }}>
+              <option value="dagelijks">Elke dag heen en terug</option>
+              <option value="overnachten">Blijft in de buurt (overnachten)</option>
+            </select>
+          </label>
+          <Veld label="Contactpersoon ter plaatse" value={p.contactpersoonTerPlaatse}
+            placeholder="waar Anton zich meldt, kan afwijken van de opdrachtgever"
+            onChange={(v) => wijzigPand(p.id, { contactpersoonTerPlaatse: v })} />
+          <Veld label="Telefoon ter plaatse" value={p.telefoonTerPlaatse}
+            onChange={(v) => wijzigPand(p.id, { telefoonTerPlaatse: v })} />
+          <Veld breed label="Instructies voor Anton" value={p.instructies}
+            placeholder="bijzonderheden, toegang, parkeren, veiligheid..."
+            onChange={(v) => wijzigPand(p.id, { instructies: v })} />
+        </div>
+        {num(p.afstandEnkel) > 0 && num(p.begrootMandagen) > 0 && (
+          <p className="text-xs mt-3" style={{ color: "#8A7B98" }}>
+            {p.reispatroon === "overnachten"
+              ? "Reistijd (" + g.reistijdEnkeleReis.toFixed(1) + " uur enkele reis) telt maar één keer mee voor de hele klus."
+              : "Reistijd (" + g.reistijdEnkeleReis.toFixed(1) + " uur enkele reis, " + (g.reistijdEnkeleReis * 2).toFixed(1) + " uur retour) gaat er elke werkdag vanaf."}
+            {" "}Bij {data.instellingen.werkurenPerDag ?? 8} werkbare uren per dag (ma–vr) kost deze klus{" "}
+            {isFinite(g.werkdagenNodig) ? g.werkdagenNodig + " werkdag" + (g.werkdagenNodig === 1 ? "" : "en") : "meer dagen dan de reistijd toelaat — overweeg overnachten"}.
+          </p>
+        )}
+        {p.startdatum && g.verwachteEinddatum && (
+          <div className="mt-3 p-3 rounded-xl" style={{ background: PAPIER }}>
+            <span className="text-sm" style={{ fontFamily: "Fredoka", color: INK }}>
+              Start {datumNL(new Date(p.startdatum + "T00:00:00"))} · verwacht klaar rond {datumNL(g.verwachteEinddatum)}
+            </span>
+          </div>
+        )}
+      </Kaart>
+
       {/* Materieel */}
       <Kaart>
         <div className="flex items-center gap-2 mb-3">
@@ -501,6 +737,37 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
               </button>
             );
           })}
+        </div>
+      </Kaart>
+
+      {/* Foto's */}
+      <Kaart>
+        <div className="flex items-center gap-2 mb-3">
+          <Package size={16} style={{ color: ROZE }} />
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Foto's</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Veld breed label="Algemene omschrijving (van Udo)" value={p.voorOmschrijving}
+            placeholder="korte samenvatting — de omschrijving per foto vul je hieronder in"
+            onChange={(v) => wijzigPand(p.id, { voorOmschrijving: v })} />
+          <Veld label="Afgerond op" type="date" value={p.afgerondOp}
+            onChange={(v) => wijzigPand(p.id, { afgerondOp: v })} />
+        </div>
+        <div className="mt-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium" style={{ color: INK }}>Voor-foto's</span>
+            <FotoUpload label="Foto's toevoegen" bezig={uploadBezig} onFiles={(files) => uploadFotos("voor", files)} />
+          </div>
+          <FotoGrid fotos={p.voorFotos} onVerwijder={(f) => verwijderFoto("voor", f)}
+            onOmschrijving={(f, v) => wijzigFotoOmschrijving("voor", f, v)} />
+        </div>
+        <div className="mt-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium" style={{ color: INK }}>Na-foto's (opgeleverd)</span>
+            <FotoUpload label="Foto's toevoegen" bezig={uploadBezig} onFiles={(files) => uploadFotos("na", files)} />
+          </div>
+          <FotoGrid fotos={p.naFotos} onVerwijder={(f) => verwijderFoto("na", f)}
+            onOmschrijving={(f, v) => wijzigFotoOmschrijving("na", f, v)} />
         </div>
       </Kaart>
 
@@ -705,6 +972,32 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
         </div>
       </Kaart>
 
+      {/* Onderhoud */}
+      <Kaart>
+        <div className="flex items-center gap-2 mb-3">
+          <Calculator size={16} style={{ color: ROZE }} />
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Onderhoudsbeurt (na deze 0-beurt)</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Veld label="Onderhoudsbeurt elke ... maanden" type="number" value={p.onderhoudsintervalMaanden}
+            onChange={(v) => wijzigPand(p.id, { onderhoudsintervalMaanden: v })} />
+        </div>
+        {num(p.begrootMandagen) > 0 && (
+          <p className="text-xs mt-3" style={{ color: "#8A7B98" }}>
+            Een onderhoudsbeurt is geschat op {g.onderhoudsPercentage}% van het werk van deze 0-beurt
+            (≈ {g.onderhoudMandagen.toFixed(1)} mandagen), reiskosten en voorrijkosten blijven vol staan omdat
+            dat een nieuwe rit is. Geschatte omzet per beurt: {eur(g.onderhoudOmzet)} excl. btw.
+            {num(p.onderhoudsintervalMaanden) > 0 && (
+              " Bij elke " + p.onderhoudsintervalMaanden + " maanden is dat " + g.onderhoudBeurtenPerJaar.toFixed(1)
+              + "× per jaar ≈ " + eur0(g.onderhoudOmzetPerJaar) + " per jaar excl. btw."
+            )}
+          </p>
+        )}
+        <p className="text-xs mt-1" style={{ color: "#8A7B98" }}>
+          Percentage is een vuistregel, aan te passen bij Export → Planning.
+        </p>
+      </Kaart>
+
       {/* Factuurregels */}
       <Kaart>
         <div className="flex items-center gap-2 mb-3">
@@ -723,6 +1016,120 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
           {factuurtekst}
         </pre>
         <p className="text-xs mt-2" style={{ color: "#8A7B98" }}>Overtikken in Jortt. Deze tool factureert niet zelf.</p>
+      </Kaart>
+
+      {/* Werkbeschrijving voor Anton */}
+      <Kaart>
+        <div className="flex items-center gap-2 mb-3">
+          <Route size={16} style={{ color: ROZE }} />
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Werkbeschrijving voor Anton</h3>
+          <span className="ml-auto">
+            <Knop variant="wit" klein onClick={() => setPrintKaart("werk")}>Print / naar Anton appen</Knop>
+          </span>
+        </div>
+        <div data-print-active={printKaart === "werk"} className="text-sm space-y-3" style={{ color: INK }}>
+          <div>
+            <div className="font-medium" style={{ fontFamily: "Fredoka" }}>{p.naam || "Naamloos pand"}</div>
+            <div style={{ color: "#6B5B7B" }}>{p.adres || "[pandadres ontbreekt]"}</div>
+          </div>
+          <div>
+            <span style={{ color: "#6B5B7B" }}>Melden bij: </span>
+            {p.contactpersoonTerPlaatse || "[nog niet ingevuld]"}
+            {p.telefoonTerPlaatse ? " · " + p.telefoonTerPlaatse : ""}
+          </div>
+          {p.startdatum && (
+            <div><span style={{ color: "#6B5B7B" }}>Startdatum: </span>{datumNL(new Date(p.startdatum + "T00:00:00"))}</div>
+          )}
+          <div>
+            <span style={{ color: "#6B5B7B" }}>Materieel mee: </span>
+            {p.materieel.length ? p.materieel.join(", ") : "[nog niets aangevinkt]"}
+          </div>
+          {p.voorOmschrijving && (
+            <div>
+              <div style={{ color: "#6B5B7B" }}>Algemene omschrijving:</div>
+              <div>{p.voorOmschrijving}</div>
+            </div>
+          )}
+          {p.voorFotos.length > 0 && (
+            <div>
+              <div style={{ color: "#6B5B7B" }} className="mb-1">Foto's van Udo, met omschrijving per foto:</div>
+              <FotoGrid fotos={p.voorFotos} />
+            </div>
+          )}
+          {p.instructies && (
+            <div>
+              <div style={{ color: "#6B5B7B" }}>Overige instructies:</div>
+              <div>{p.instructies}</div>
+            </div>
+          )}
+        </div>
+      </Kaart>
+
+      {/* Opleverrapport voor de klant, in GumClean-huisstijl (design system v2) */}
+      <Kaart className="overflow-hidden">
+        <div className="flex items-center gap-2 mb-3">
+          <CheckCircle2 size={16} style={{ color: ROZE }} />
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Opleverrapport voor de klant</h3>
+          <span className="ml-auto">
+            <Knop variant="wit" klein onClick={() => setPrintKaart("oplever")}>Print / opslaan als pdf</Knop>
+          </span>
+        </div>
+        <div data-print-active={printKaart === "oplever"} className="rounded-xl p-6"
+          style={{ background: "#FFFFFF", border: "1px solid #E4DEE9", fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="flex items-center justify-between mb-6">
+            <img src="/logo.png" alt="GumClean" style={{ height: 32 }} />
+            <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: "#FFE8F3", color: "#CC317B" }}>
+              Opleverrapport
+            </span>
+          </div>
+          <h1 style={{ fontFamily: "Fredoka", fontWeight: 600, fontSize: "1.5rem", color: "#1A0A2E" }}>{p.naam || "Naamloos pand"}</h1>
+          <p style={{ color: "#6B6076" }}>{p.adres}</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm" style={{ color: "#6B6076" }}>
+            <span>Opdrachtgever: {k?.contactpersoon || "—"}</span>
+            {p.afgerondOp && <span style={{ color: "#1E8E5A" }}>Afgerond op {datumNL(new Date(p.afgerondOp + "T00:00:00"))}</span>}
+          </div>
+
+          {p.werkzaamheden && (
+            <div className="mt-5">
+              <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }}>Uitgevoerde werkzaamheden</h2>
+              <p style={{ color: "#1A0A2E" }}>{p.werkzaamheden}</p>
+            </div>
+          )}
+
+          {(p.voorFotos.length > 0 || p.naFotos.length > 0) && (
+            <div className="mt-5">
+              <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }} className="mb-2">Voor en na</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: Math.max(p.voorFotos.length, p.naFotos.length) }).map((_, i) => (
+                  <React.Fragment key={i}>
+                    <div>
+                      {p.voorFotos[i] && (
+                        <img src={"/api/fotos?pad=" + encodeURIComponent(p.voorFotos[i].pathname)} alt="voor"
+                          className="w-full aspect-square object-cover" style={{ borderRadius: 20, boxShadow: "0 1px 2px rgba(26,10,46,.06)" }} />
+                      )}
+                      <p className="text-xs mt-1 text-center" style={{ color: "#6B6076" }}>
+                        voor{p.voorFotos[i]?.omschrijving ? " — " + p.voorFotos[i].omschrijving : ""}
+                      </p>
+                    </div>
+                    <div>
+                      {p.naFotos[i] && (
+                        <img src={"/api/fotos?pad=" + encodeURIComponent(p.naFotos[i].pathname)} alt="na"
+                          className="w-full aspect-square object-cover" style={{ borderRadius: 20, boxShadow: "0 1px 2px rgba(26,10,46,.06)" }} />
+                      )}
+                      <p className="text-xs mt-1 text-center" style={{ color: "#6B6076" }}>
+                        na{p.naFotos[i]?.omschrijving ? " — " + p.naFotos[i].omschrijving : ""}
+                      </p>
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs mt-8 pt-3" style={{ color: "#6B6076", borderTop: "1px solid #E4DEE9" }}>
+            Antoni Hristov · gumclean.nl · 06 4221 0739 · info@gumclean.nl · KvK 42082782
+          </p>
+        </div>
       </Kaart>
 
       <Knop variant="wit" onClick={() => {
@@ -784,6 +1191,23 @@ function ExportScherm({ data, bewaar, gekopieerd, kopieer }) {
         <p className="text-xs mt-2" style={{ color: "#8A7B98" }}>
           Uurloon (rekenprijs arbeid) staat per klant, bij Klantgegevens — verschilt niet per instelling maar per klant.
         </p>
+      </Kaart>
+      <Kaart>
+        <h3 className="mb-1" style={{ fontFamily: "Fredoka", color: INK }}>Planning</h3>
+        <p className="text-xs mb-3" style={{ color: "#8A7B98" }}>
+          Voor de "verwacht klaar op"-datum per opdracht. Anton werkt in principe vanaf 08:30 met 30 minuten
+          pauze — dat verandert de 8 werkbare uren niet, dus telt hier niet apart mee. Alleen maandag t/m
+          vrijdag geldt als werkdag.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <Veld label="Werkbare uren per dag" type="number" value={data.instellingen.werkurenPerDag ?? 8}
+            onChange={(v) => bewaar({ ...data, instellingen: { ...data.instellingen, werkurenPerDag: v } })} />
+          <Veld label="Gemiddelde reissnelheid (km/h)" type="number" value={data.instellingen.reissnelheid ?? 80}
+            onChange={(v) => bewaar({ ...data, instellingen: { ...data.instellingen, reissnelheid: v } })} />
+          <Veld label="Onderhoudsbeurt: % van het werk van een 0-beurt" type="number"
+            value={data.instellingen.onderhoudsPercentage ?? 60}
+            onChange={(v) => bewaar({ ...data, instellingen: { ...data.instellingen, onderhoudsPercentage: v } })} />
+        </div>
       </Kaart>
       <Kaart>
         <h3 className="mb-1" style={{ fontFamily: "Fredoka", color: INK }}>Reserveringen</h3>

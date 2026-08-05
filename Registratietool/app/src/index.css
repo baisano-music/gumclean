@@ -3,3 +3,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Print-isolatie voor de werkbeschrijving/opleverrapport: alleen het blok met
+   data-print-active="true" komt op papier, de rest van de tool verdwijnt. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  [data-print-active="true"],
+  [data-print-active="true"] * {
+    visibility: visible;
+  }
+  [data-print-active="true"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

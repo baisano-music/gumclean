@@ -48,12 +48,19 @@ in plaats van `npm run dev` (na `vercel env pull` voor de env vars).
     request. Zelfde patroon als de poort op de hoofdsite
     (`SITE_GATE_PASSWORD`), maar dan met Vercel Routing Middleware in plaats
     van een Next.js proxy, en een eigen env var omdat het een apart project
-    is. Zonder `REGISTRATIE_GATE_PASSWORD` staat de poort open (bijv. lokaal).
+    is. Zonder `REGISTRATIE_GATE_PASSWORD` staat de poort open (bijv. lokaal) —
+    behalve op Vercel-productie (`VERCEL_ENV === "production"`), daar blijft de
+    poort dicht als de env var ooit per ongeluk ontbreekt. Wachtwoord staat als
+    vaste-tijd-vergelijking, geen `===`, om timing-aanvallen op het wachtwoord
+    onmogelijk te maken (zie `lib/auth.js`).
   - `api/data.js` — GET/POST van de hele state als één JSON-blob in Vercel
     Blob (private store, niet publiek benaderbaar). Checkt de wachtwoordpoort
     nogmaals zelf, naast de middleware — Vercel raadt dat expliciet aan voor
     private blobs.
+  - `api/fotos.js` — GET/POST/DELETE van voor-/na-foto's, ook private Blob,
+    zelfde wachtwoordcheck. Zie "Foto's" hieronder.
   - `lib/auth.js` — gedeelde wachtwoordcheck voor middleware en API.
+  - `public/logo.png` — GumClean-woordmerk, gebruikt in het opleverrapport.
 
 Wijzigingen aan de component maak je voortaan in `app/src/App.jsx`.
 
@@ -94,16 +101,26 @@ De frontend valt terug op `localStorage` als `/api/data` niet bereikbaar is
 instellingen   thuisadres, dieselprijs, verbruik (l/100km), btwPercentage,
                reserveringAov, reserveringPensioen, reserveringWeer,
                reserveringInvestering (alle vier % van omzet),
-               reserveringBelasting (% van winst)
+               reserveringBelasting (% van winst),
+               werkurenPerDag (standaard 8), reissnelheid (km/h, standaard 80),
+               onderhoudsPercentage (standaard 60)
 klant          naam, contactpersoon, kvk, dagtarief, uurloon, betaaltermijn
-  └ route      naam, tenaamstelling, adres, btw, email, notitie
+  └ route      naam, tenaamstelling, tav, adres, btw, email, notitie
 pand           klantId, routeId, naam, adres, filiaalnummer, grootboek,
+               soortWerk (standaard "Groot onderhoud"), werkzaamheden,
+               diensten (array: Gevelreiniging, Terreinreiniging (stoep),
+               Winkelpui/ramen reinigen, Graffitiverwijdering),
+               onderhoudsintervalMaanden,
                begrootMandagen, begrootEenheid (dag|uur), voorrijkosten,
                werkelijkeMandagen, werkelijkeEenheid (dag|uur), afstandEnkel,
-               hoogwerker, doorbelast
+               hoogwerker, doorbelast, startdatum, reispatroon (dagelijks|overnachten),
+               contactpersoonTerPlaatse, telefoonTerPlaatse, instructies,
+               voorOmschrijving, afgerondOp
   ├ uren       datum, uren, omschrijving
   ├ ritten     datum, km, type (zakelijk|prive), doel
   ├ materieel  array van labels
+  ├ voorFotos  { id, pathname } — foto's van Udo, wat er moet gebeuren
+  ├ naFotos    { id, pathname } — foto's van het opgeleverde werk
   └ verbruik   omschrijving, aantal, prijs
 ```
 
@@ -129,6 +146,15 @@ omzet maar niet in het uur-/dagtarief.
 naast de urenlijst: vul óf losse uren in (`uren`), óf in één keer het aantal
 werkelijk gewerkte dagen/uren — niet allebei. `cijfers()` gebruikt de urenlijst
 als die iets bevat, anders `werkelijkeMandagen` omgerekend naar uren.
+
+De factuurregels (`factuurtekst` in `PandScherm`) bevatten de vermeldingen die
+Action vraagt: pandadres, grootboek, soort werk en de uitgevoerde
+werkzaamheden, met de klantcontactpersoon als "Opdrachtgever". `soortWerk`
+staat standaard op "Groot onderhoud" (Actions eigen classificatie voor
+gevelreiniging) maar is per pand aanpasbaar voor werk dat daar niet onder valt
+(bijv. graffitiverwijdering). `grootboek` staat voor Action's panden standaard
+op "Omzet Gevelreiniging" (`START()`); nieuwe panden of andere klanten vullen
+dit zelf in.
 
 Panden staan plat in `data.panden` met een `klantId`, niet genest onder de
 klant. Dat maakt filteren en optellen over alle klanten heen makkelijker.
@@ -180,6 +206,94 @@ tarief per jaar opslaan in plaats van als constante.
 
 Hoogwerkerhuur (`doorbelast`) loopt buiten de marge om: één op één doorbelast
 aan de klant, dus per saldo nul.
+
+**Onderhoudsbeurt** (ook in `cijfers()`, een schatting voor het vervolgvoorstel
+na een 0-beurt):
+
+```
+onderhoudMandagen  = begroteMandagen × onderhoudsPercentage       ← standaard 60%
+onderhoudOmzet     = omzetBasis × onderhoudsPercentage + voorrijkosten
+                                                          ← reiskosten/voorrijkosten blijven vol,
+                                                            nieuwe rit, geen minder werk daaraan
+onderhoudBeurtenPerJaar = 12 / onderhoudsintervalMaanden
+onderhoudOmzetPerJaar   = onderhoudOmzet × onderhoudBeurtenPerJaar
+```
+
+`diensten` (welke van gevelreiniging/terreinreiniging/ramen/graffiti de
+0-beurt omvatte) is puur informatief — telt niet mee in een berekening, staat
+op het pand voor bij het opstellen van een vervolgvoorstel. Het gros van de
+huidige opdrachten is een combinatie van gevelreiniging, terreinreiniging en
+ramen in één 0-beurt (zie `START()`).
+
+**Planning** (ook in `cijfers()`, voor Anton's inplanning):
+
+```
+totaleWerkurenNodig  = begroteMandagen × 8
+reistijdEnkeleReis   = afstandEnkel / reissnelheid                ← uren, reissnelheid standaard 80 km/h
+
+dagelijks (forenzen):
+  effectieveUrenPerDag = werkurenPerDag − 2 × reistijdEnkeleReis   ← heen+terug elke werkdag
+  werkdagenNodig       = totaleWerkurenNodig ÷ effectieveUrenPerDag, naar boven afgerond
+
+overnachten (blijft in de buurt):
+  werkdagenNodig = (totaleWerkurenNodig + 2 × reistijdEnkeleReis) ÷ werkurenPerDag, naar boven afgerond
+                                                                     ← reis telt maar 1× voor de hele klus
+
+verwachteEinddatum = startdatum + werkdagenNodig werkdagen (ma–vr, weekend overgeslagen)
+```
+
+`reispatroon` (`dagelijks` | `overnachten`) staat per pand, want dat verschilt
+per klus — dichtbij forenst Anton, ver weg blijft hij soms in de buurt. Anton's
+starttijd (08:30) en pauze (30 min) veranderen de 8 werkbare uren niet en
+worden dus niet apart doorgerekend — ze bepalen alleen hóe laat die 8 uur
+vallen, niet hoeveel het er zijn. `werkurenPerDag` en `reissnelheid` zijn
+instellingen, aanpasbaar bij Export → Planning. Vuistregel, geen exacte
+routeplanning — zie ook de bestaande beslissing om kilometers uit een vaste
+tabel te halen in plaats van een live routeplanner.
+
+## Foto's
+
+Voor- en na-foto's staan private in dezelfde Vercel Blob store als `data.js`,
+onder `foto/{pandId}/{voor|na}/{uuid}.jpg` — nooit publiek, alleen te bekijken
+via `/api/fotos?pad=...` (checkt de wachtwoordpoort net als `api/data.js`).
+`<img src="/api/fotos?pad=...">` werkt zonder extra JS-gedoe met blob-URL's,
+omdat de browser de Basic Auth-credentials die al voor de pagina zijn
+ingevoerd automatisch meestuurt bij het laden van de afbeelding.
+
+Foto's worden in de browser verkleind en gecomprimeerd vóór upload
+(`comprimeerAfbeelding()` in `App.jsx`, max 1600px, JPEG kwaliteit 0,8) — een
+telefoonfoto is al snel 5-10 MB, en dat hoeft niemand ongewijzigd in Blob-
+opslag te zetten.
+
+**Werkt niet met `npm run dev`.** Net als `/api/data` heeft `/api/fotos` de
+`/api`-laag nodig — lokaal alleen bereikbaar via `vercel dev` (na
+`vercel env pull` voor de Blob-token). Onder gewone `npm run dev` faalt de
+upload stil (geen `/api`-fallback voor foto's, in tegenstelling tot de
+JSON-data die op `localStorage` terugvalt).
+
+## Werkbeschrijving en opleverrapport
+
+Twee documenten, allebei op het pand-scherm, allebei achter de wachtwoordpoort
+en handmatig door Bas doorgestuurd — geen deelbare publieke links, dat hield
+het beveiligingsoppervlak klein.
+
+- **Werkbeschrijving** (voor Anton): pandadres, contactpersoon ter plaatse,
+  materieellijst, wat er moet gebeuren + Udo's foto's, overige instructies.
+  Functioneel opgemaakt, geen huisstijl nodig — Anton heeft geen toegang tot de
+  tool en krijgt dit via appje/screenshot/print.
+- **Opleverrapport** (voor Udo/de klant): huisstijl volgens
+  `gumclean-design-system-v2.md` (het echte, canonieke systeem — dus met
+  `brand/pink-interactive` (`#CC317B`) voor accenten, niet het felle
+  `brand/pink` (`#FF3D9A`), want wit-op-fel-roze haalt geen WCAG AA). Bevat de
+  uitgevoerde werkzaamheden en een voor/na-sectie die het "voor/na-kaart"-
+  component uit het design system volgt: voor en na naast elkaar, met "voor"
+  en "na" als zichtbare tekstlabels, niet alleen visueel naast elkaar gezet.
+  Sluit af met de voetregel-indeling uit het design system (§5).
+
+Beide printen via `window.print()`, met een CSS-regel in `index.css`
+(`[data-print-active="true"]`) die de rest van de pagina onzichtbaar maakt
+zodat alleen het aangeklikte document op papier (of in de "opslaan als pdf"-
+dialoog) komt.
 
 ## Startdata
 
