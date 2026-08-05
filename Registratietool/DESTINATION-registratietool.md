@@ -58,7 +58,10 @@ Dezelfde data levert vier uitkomsten:
   Anton alles geeft wat hij nodig heeft: waar, bij wie melden, wat meenemen,
   wat er moet gebeuren.
 - Als Bas maak ik na afloop, met de na-foto's, een opleverrapport in
-  GumClean-huisstijl om naar Udo/de klant te sturen.
+  GumClean-huisstijl om naar Udo/de klant te sturen, gegroepeerd per dienst
+  als ik de foto's zo getagd heb, en vergrendel ik het rapport zodra het echt
+  verstuurd is zodat latere wijzigingen het niet meer met terugwerkende
+  kracht veranderen.
 - Als Bas geef ik per pand aan welke diensten de 0-beurt omvatte
   (gevelreiniging, terreinreiniging, ramen, graffiti) en hoe vaak een
   onderhoudsbeurt daarna realistisch is, zodat ik een vervolgvoorstel kan
@@ -165,6 +168,36 @@ Dezelfde data levert vier uitkomsten:
   naast elkaar). Bas koppelt nu zelf elke na-foto aan een voor-foto in de
   tool; foto's zonder koppeling komen los te staan in plaats van naast een
   verkeerde of lege partner.
+- **Het opleverrapport vergrendelt op een expliciete knop, niet automatisch
+  bij printen/previewen — en snapshot't dezelfde manier als de offerte.**
+  `OpleverrapportDocument` rendert normaal live uit het pand: handig tijdens
+  het opstellen, maar riskant erna. Zonder vergrendeling zou een werkzaamheid
+  of foto die Bas ná het versturen nog aanpast (of verwijdert) stilletjes in
+  een heropend/herprint rapport verschijnen — precies het probleem dat de
+  offerte-snapshot al oploste voor `offerte.regels` (zie hierboven), nu
+  opnieuw voor `p.werkzaamheden`/`p.extraWerkzaamheden`/`p.voorFotos`/
+  `p.naFotos`/`p.afgerondOp`. Bewust géén auto-lock op het print-moment: Bas
+  print/bekijkt de preview vaak nog terwijl hij aan het draft is, en dat mag
+  vrij blijven — vergrendelen ("Rapport vergrendelen"-knop) is een aparte,
+  bewuste stap met een eigen "Ontgrendelen" terug-knop voor als het per
+  ongeluk gebeurde. De snapshot vangt ook een `gegenereerdOp`-tijdstempel op
+  het moment van vergrendelen, getoond in de voetregel van het rapport — een
+  live `new Date()` op elke render was géén optie, want dan toont een
+  heropende preview morgen "vandaag" in plaats van het echte verstuurmoment.
+- **Foto's krijgen een optioneel `dienst`-veld, en het opleverrapport
+  groepeert de voor/na-sectie daarop in plaats van één platte grid.** Bij
+  panden met meerdere diensten in één 0-beurt (bijv. gevelreiniging én
+  graffitiverwijdering, zoals Leek en Drachten) stonden alle voor/na-paren
+  door elkaar, terwijl Udo per dienst wil kunnen zien wat er gedaan is. Elke
+  dienst uit `p.diensten` krijgt nu een eigen kopje met zijn eigen
+  voorFotoId-matching (nu gescoped per dienst — een paar hoort alleen bij
+  elkaar in dezelfde dienst-groep als beide foto's zo getagd zijn); wat
+  ongetagd blijft (of getagd is op een dienst die er inmiddels weer af is)
+  valt terug op een "Algemeen"-groep aan het eind, exact het oude
+  fallback-gedrag. `p.diensten` zelf komt niet in de snapshot hierboven te
+  staan — de foto's en hun tags wel, maar de volgorde/indeling zelf mag altijd
+  meebewegen met het pand, want dat is puur presentatie, geen inhoud die naar
+  de klant is gegaan.
 
 ## Explicitly out of scope
 

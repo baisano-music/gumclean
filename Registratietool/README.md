@@ -115,15 +115,20 @@ pand           klantId, routeId, naam, adres, filiaalnummer, grootboek,
                werkelijkeMandagen, werkelijkeEenheid (dag|uur), afstandEnkel,
                hoogwerker, doorbelast, startdatum, reispatroon (dagelijks|overnachten),
                contactpersoonTerPlaatse, telefoonTerPlaatse, instructies,
-               voorOmschrijving, afgerondOp
+               voorOmschrijving, afgerondOp,
+               opleverrapportVergrendeld, opleverrapportSnapshot (zie
+               "Werkbeschrijving en opleverrapport" hieronder)
   ├ uren       datum, uren, omschrijving
   ├ ritten     datum, km, type (zakelijk|prive), doel
   ├ materieel  array van labels
   ├ extraWerkzaamheden  { omschrijving, bedrag } — buiten de offerte gedaan
   │                        (graffiti, grofvuil...), bedrag telt mee in omzet
-  ├ voorFotos  { id, pathname, omschrijving } — foto's van Udo, wat er moet gebeuren
-  ├ naFotos    { id, pathname, omschrijving, voorFotoId } — opgeleverde foto's;
-  │              voorFotoId koppelt 'm expliciet aan een voorFotos-item
+  ├ voorFotos  { id, pathname, omschrijving, dienst } — foto's van Udo, wat er
+  │              moet gebeuren; dienst (optioneel, één van p.diensten, "" =
+  │              algemeen) groepeert de foto in het opleverrapport
+  ├ naFotos    { id, pathname, omschrijving, voorFotoId, dienst } — opgeleverde
+  │              foto's; voorFotoId koppelt 'm expliciet aan een
+  │              voorFotos-item, dienst zoals hierboven
   └ verbruik   omschrijving, aantal, prijs
 ```
 
@@ -255,6 +260,13 @@ instellingen, aanpasbaar bij Export → Planning. Vuistregel, geen exacte
 routeplanning — zie ook de bestaande beslissing om kilometers uit een vaste
 tabel te halen in plaats van een live routeplanner.
 
+`loopAchter` (ook in `cijfers()`) is `true` als er een `verwachteEinddatum` is
+(dus een bekende `startdatum`), het pand niet handmatig is afgerond
+(`p.afgerondOp` leeg) én vandaag al voorbij die verwachte einddatum ligt. Een
+afgerond pand loopt nooit achter, ongeacht de datum. Overzicht toont dit als
+een geel "Loopt achter"-badge op de pandregel, plus een telling in de
+klant-footer als er panden van die klant achterlopen.
+
 ## Foto's
 
 Voor- en na-foto's staan private in dezelfde Vercel Blob store als `data.js`,
@@ -285,6 +297,14 @@ bij: ..."); `OpleverrapportDocument` groepeert op basis daarvan: gekoppelde
 paren eerst, dan losse voor-foto's zonder match, dan losse na-foto's zonder
 match — nooit een lege "voor"-cel naast een foto die er niet bij hoort.
 
+**Elke foto (voor én na) heeft ook een optioneel `dienst`-veld**, een dropdown
+onder de thumbnail in de "Foto's"-kaart (`dienstOpties`/`onDienst`-props op
+`FotoGrid`, zelfde patroon als `koppelOpties`/`onKoppel`), met als opties
+`p.diensten` van dat pand en "" als default (algemeen/ongetagd). Bepaalt hoe
+`OpleverrapportDocument` de "Voor en na"-sectie groepeert, zie hieronder —
+zonder tag komt een foto gewoon bij "Algemeen" terecht, dus oude foto's zonder
+`dienst`-veld blijven werken zoals voorheen.
+
 ## Werkbeschrijving en opleverrapport
 
 Twee documenten, allebei op het pand-scherm, allebei achter de wachtwoordpoort
@@ -303,6 +323,40 @@ het beveiligingsoppervlak klein.
   component uit het design system volgt: voor en na naast elkaar, met "voor"
   en "na" als zichtbare tekstlabels, niet alleen visueel naast elkaar gezet.
   Sluit af met de voetregel-indeling uit het design system (§5).
+
+**"Voor en na" groepeert nu per dienst.** Voor elke dienst in `p.diensten`
+(in die volgorde) een lichte `<h3>`-subkop, gevolgd door de gekoppelde
+voor/na-paren en losse foto's die op díe dienst getagd zijn (zelfde
+voorFotoId-matchlogica als voorheen, nu gescoped per dienst — een paar hoort
+dus alleen bij elkaar in het rapport als beide foto's dezelfde dienst-tag
+hebben). Wat overblijft — ongetagd, of getagd op een dienst die inmiddels uit
+`p.diensten` is gehaald — komt daarna als "Algemeen" te staan, met dezelfde
+matchlogica. Subkopjes blijven weg zolang er maar één groep is en dat de
+Algemeen-groep is (dus: geen enkele foto getagd) — dan ziet het rapport er
+precies zo uit als vóór deze functie bestond. Geen enkele foto valt weg,
+ongeacht tagging.
+
+**Opleverrapport vergrendelen bevriest de inhoud.** Zelfde reden als de
+offerte-snapshot (zie DESTINATION-registratietool.md): zonder vergrendeling
+rendert `OpleverrapportDocument` altijd live uit `p`, dus als Bas na het
+versturen nog een werkzaamheid of foto aanpast, laat een heropend/herprint
+rapport stilletjes iets anders zien dan wat er echt naar de klant ging. De
+knop "Rapport vergrendelen" op de Opleverrapport-kaart zet
+`opleverrapportVergrendeld: true` en vangt een snapshot
+(`opleverrapportSnapshot`) van `werkzaamheden`, `extraWerkzaamheden`,
+`voorFotos`, `naFotos`, `afgerondOp` en een vers `gegenereerdOp`-tijdstempel
+(ISO-string, `new Date().toISOString()` op vergrendelmoment). Zolang
+vergrendeld, rendert het document uit die snapshot in plaats van uit de live
+pandvelden; een "Ontgrendelen"-knop zet beide velden terug naar
+false/null als Bas per ongeluk vergrendelde of opnieuw wil beginnen.
+`p.diensten` zelf (de indeling, niet de foto-inhoud) blijft altijd live — zit
+bewust niet in de snapshot, want de groepering mag wél meebewegen zolang de
+gesnapshotte foto's en tags niet veranderen. De voetregel van het rapport
+toont het vergrendel-tijdstip (`gegenereerdOp`) als het gezet is, anders een
+lichte "(nog niet vergrendeld)"-hint — nooit een live `new Date()`, dat zou bij
+elke heropening "vandaag" tonen. Vergrendelen gebeurt **niet** automatisch bij
+printen/previewen — dat blijft vrij, zodat Bas kan blijven bijschaven terwijl
+hij concept-versies bekijkt; vergrendelen is een aparte, bewuste actie.
 
 Beide printen via `window.print()` en een `PrintPortaal`-component: het
 document wordt via `createPortal` (react-dom) direct in `<body>` gerenderd,

@@ -49,7 +49,13 @@ const LEEG_PAND = (klantId) => ({
   onderhoudsintervalMaanden: 0,
   contactpersoonTerPlaatse: "", telefoonTerPlaatse: "", instructies: "",
   voorOmschrijving: "", voorFotos: [], naFotos: [], afgerondOp: "",
-  materieel: [], uren: [], ritten: [], verbruik: [], extraWerkzaamheden: []
+  materieel: [], uren: [], ritten: [], verbruik: [], extraWerkzaamheden: [],
+  // Opleverrapport vergrendelen bevriest het (zie OpleverrapportDocument):
+  // snapshot vangt werkzaamheden/extraWerkzaamheden/foto's/afgerondOp op het
+  // moment van vergrendelen, zodat latere wijzigingen een al verstuurd
+  // rapport niet met terugwerkende kracht veranderen — zelfde reden als de
+  // offerte-snapshot (zie DESTINATION-registratietool.md).
+  opleverrapportVergrendeld: false, opleverrapportSnapshot: null,
 });
 
 const STANDAARD_WERKWIJZE = "Wij reinigen gevels, glas en lichtreclame met osmosetechniek en hoogwaardig "
@@ -147,6 +153,12 @@ const eur = (n) => "€ " + (n || 0).toLocaleString("nl-NL", { minimumFractionDi
 const eur0 = (n) => "€ " + Math.round(n || 0).toLocaleString("nl-NL");
 const num = (v) => (v === "" || v === null || v === undefined ? 0 : Number(v) || 0);
 const datumNL = (d) => d ? d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }) : "";
+// Datum + tijd, voor de vergrendel-tijdstempel op het opleverrapport (ISO-string in, nette tekst uit).
+const datumTijdNL = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return datumNL(d) + " om " + d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
+};
 
 // Telt aantal werkdagen (ma–vr) op bij een startdatum, en rolt een startdatum die
 // zelf in het weekend valt eerst door naar de eerstvolgende maandag.
@@ -276,6 +288,10 @@ const cijfers = (data, p) => {
     }
   }
   const verwachteEinddatum = berekenEinddatum(p.startdatum, werkdagenNodig);
+  // "Loopt achter": er is een verwachte einddatum (dus een bekende startdatum), de
+  // klus is niet handmatig afgerond (`afgerondOp`), en vandaag ligt al voorbij die
+  // verwachte einddatum. Een afgerond pand loopt nooit achter, ongeacht de datum.
+  const loopAchter = !!verwachteEinddatum && !p.afgerondOp && new Date() > verwachteEinddatum;
 
   // Onderhoudsbeurt: een vervolgbezoek na de 0-beurt kost minder werk (minder
   // vervuiling om weg te halen) maar evenveel reistijd — dus alleen het
@@ -297,7 +313,7 @@ const cijfers = (data, p) => {
     pctAov, pctPensioen, pctWeer, pctInvestering, pctBelasting, btwPercentage, omzetInclBtw,
     reserveringAov, reserveringPensioen, reserveringWeer, reserveringInvestering, reserveringBelasting,
     reservering, reserveringBtw, reserveringTotaal, nettoBeschikbaar,
-    reistijdEnkeleReis, werkdagenNodig, verwachteEinddatum,
+    reistijdEnkeleReis, werkdagenNodig, verwachteEinddatum, loopAchter,
     onderhoudsPercentage, onderhoudMandagen, onderhoudOmzet, onderhoudBeurtenPerJaar, onderhoudOmzetPerJaar,
   };
 };
@@ -376,7 +392,11 @@ function Kaart({ children, className = "" }) {
 // laden van <img>. Zonder onVerwijder/onOmschrijving is de grid read-only
 // (voor in de werkbeschrijving-preview); de omschrijving staat er dan als
 // platte tekst i.p.v. een invoerveld.
-function FotoGrid({ fotos, onVerwijder, onOmschrijving, koppelOpties, onKoppel }) {
+// dienstOpties/onDienst laat elke foto taggen met welke dienst (uit
+// p.diensten) 'm documenteert, default "" (algemeen/ongetagd) — het
+// opleverrapport groepeert de voor/na-sectie hierop. Zelfde patroon als
+// koppelOpties/onKoppel voor de voorFotoId-koppeling hierboven.
+function FotoGrid({ fotos, onVerwijder, onOmschrijving, koppelOpties, onKoppel, dienstOpties, onDienst }) {
   if (!fotos.length) return null;
   return (
     <div className="grid grid-cols-3 gap-2 mt-2">
@@ -399,6 +419,14 @@ function FotoGrid({ fotos, onVerwijder, onOmschrijving, koppelOpties, onKoppel }
           ) : f.omschrijving ? (
             <p className="text-xs mt-1" style={{ color: "#6B5B7B" }}>{f.omschrijving}</p>
           ) : null}
+          {dienstOpties && (
+            <select value={f.dienst ?? ""} onChange={(e) => onDienst(f, e.target.value)}
+              className="w-full mt-1 px-1 py-1 rounded text-xs outline-none border"
+              style={{ borderColor: "#E4DCEA", background: "white", color: INK }}>
+              <option value="">Algemeen (niet aan een dienst gekoppeld)</option>
+              {dienstOpties.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          )}
           {koppelOpties && (
             <select value={f.voorFotoId ?? ""} onChange={(e) => onKoppel(f, e.target.value)}
               className="w-full mt-1 px-1 py-1 rounded text-xs outline-none border"
@@ -460,8 +488,9 @@ function Overzicht({ data, setScherm, bewaar }) {
           const c = cijfers(data, p);
           return { omzet: a.omzet + c.omzet, marge: a.marge + c.marge, resultaat: a.resultaat + c.resultaat,
             kosten: a.kosten + c.kosten + c.arbeid, km: a.km + c.kmZakelijk, uren: a.uren + c.effectieveUren,
-            reserveringTotaal: a.reserveringTotaal + c.reserveringTotaal, nettoBeschikbaar: a.nettoBeschikbaar + c.nettoBeschikbaar };
-        }, { omzet: 0, marge: 0, resultaat: 0, kosten: 0, km: 0, uren: 0, reserveringTotaal: 0, nettoBeschikbaar: 0 });
+            reserveringTotaal: a.reserveringTotaal + c.reserveringTotaal, nettoBeschikbaar: a.nettoBeschikbaar + c.nettoBeschikbaar,
+            loopAchter: a.loopAchter + (c.loopAchter ? 1 : 0) };
+        }, { omzet: 0, marge: 0, resultaat: 0, kosten: 0, km: 0, uren: 0, reserveringTotaal: 0, nettoBeschikbaar: 0, loopAchter: 0 });
         return (
           <div key={k.id}>
             <div className="flex items-center justify-between gap-2 mb-1">
@@ -495,6 +524,12 @@ function Overzicht({ data, setScherm, bewaar }) {
                           {g.verwachteEinddatum && " · verwacht klaar " + datumNL(g.verwachteEinddatum)}
                         </span>
                       )}
+                      {g.loopAchter && (
+                        <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-1"
+                          style={{ background: GEEL, color: INK }}>
+                          Loopt achter
+                        </span>
+                      )}
                     </span>
                     <span className="text-right shrink-0">
                       <span className="block text-sm" style={{ color: INK }}>{eur0(g.omzet)}</span>
@@ -510,6 +545,7 @@ function Overzicht({ data, setScherm, bewaar }) {
               <div className="px-4 py-3 flex items-center justify-between" style={{ borderTop: "1px solid #EDE6F2", background: "#FBF7FD" }}>
                 <span className="text-xs" style={{ color: "#6B5B7B" }}>
                   Totaal {panden.length} panden · {Math.round(som.km)} km zakelijk · {som.uren} uur geregistreerd
+                  {som.loopAchter > 0 && <span style={{ color: INK }}> · {som.loopAchter} loopt achter</span>}
                 </span>
                 <span className="text-sm" style={{ fontFamily: "Fredoka", color: INK }}>
                   {eur0(som.omzet)} opbrengst · {eur0(som.kosten)} kosten ·{" "}
@@ -660,6 +696,20 @@ function FotoCel({ foto, label }) {
 }
 
 function OpleverrapportDocument({ p, k }) {
+  // Vergrendeld (zie 'Rapport vergrendelen' in PandScherm): render vanaf de
+  // bevroren snapshot, niet vanaf de live p-velden — zelfde reden als
+  // offerte.regels (zie DESTINATION-registratietool.md): een al verstuurd
+  // rapport mag niet stilletjes veranderen als Bas daarna werkzaamheden of
+  // foto's aanpast. Nog niet vergrendeld: gewoon live uit p, zoals voorheen.
+  // p.diensten (de indeling zelf, niet de foto-inhoud) blijft altijd live —
+  // zit bewust niet in de snapshot, zie de toelichting bij de groepering.
+  const r = p.opleverrapportVergrendeld && p.opleverrapportSnapshot
+    ? p.opleverrapportSnapshot
+    : {
+        werkzaamheden: p.werkzaamheden, extraWerkzaamheden: p.extraWerkzaamheden,
+        voorFotos: p.voorFotos, naFotos: p.naFotos, afgerondOp: p.afgerondOp, gegenereerdOp: null,
+      };
+
   return (
     <div className="rounded-xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E4DEE9", fontFamily: "'DM Sans', sans-serif" }}>
       <div className="flex items-center justify-between mb-6">
@@ -672,21 +722,21 @@ function OpleverrapportDocument({ p, k }) {
       <p style={{ color: "#6B6076" }}>{p.adres}{p.filiaalnummer ? " · filiaalnummer " + p.filiaalnummer : ""}</p>
       <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm" style={{ color: "#6B6076" }}>
         <span>Opdrachtgever: {k?.contactpersoon || "—"}</span>
-        {p.afgerondOp && <span style={{ color: "#1E8E5A" }}>Afgerond op {datumNL(new Date(p.afgerondOp + "T00:00:00"))}</span>}
+        {r.afgerondOp && <span style={{ color: "#1E8E5A" }}>Afgerond op {datumNL(new Date(r.afgerondOp + "T00:00:00"))}</span>}
       </div>
 
-      {p.werkzaamheden && (
+      {r.werkzaamheden && (
         <div className="mt-5">
           <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }}>Uitgevoerde werkzaamheden</h2>
-          <p style={{ color: "#1A0A2E" }}>{p.werkzaamheden}</p>
+          <p style={{ color: "#1A0A2E" }}>{r.werkzaamheden}</p>
         </div>
       )}
 
-      {p.extraWerkzaamheden.length > 0 && (
+      {r.extraWerkzaamheden.length > 0 && (
         <div className="mt-5">
           <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }}>Extra uitgevoerd, buiten de offerte</h2>
           <ul style={{ color: "#1A0A2E" }}>
-            {p.extraWerkzaamheden.map((x, i) => (
+            {r.extraWerkzaamheden.map((x, i) => (
               <li key={i}>{x.omschrijving}{num(x.bedrag) > 0 ? " — " + eur(x.bedrag) + " excl. btw" : ""}</li>
             ))}
           </ul>
@@ -697,34 +747,72 @@ function OpleverrapportDocument({ p, k }) {
         // Koppeling is expliciet (na.voorFotoId), niet op uploadvolgorde —
         // anders staan foto's willekeurig naast elkaar zodra de aantallen
         // niet gelijk zijn (bijna altijd het geval: Anton stuurt meestal
-        // meer na-foto's dan Udo voor-foto's stuurde).
-        const gekoppeld = p.naFotos.filter((n) => n.voorFotoId && p.voorFotos.some((v) => v.id === n.voorFotoId));
-        const naLos = p.naFotos.filter((n) => !gekoppeld.includes(n));
-        const gekoppeldeVoorIds = new Set(gekoppeld.map((n) => n.voorFotoId));
-        const voorLos = p.voorFotos.filter((v) => !gekoppeldeVoorIds.has(v.id));
-        if (gekoppeld.length === 0 && naLos.length === 0 && voorLos.length === 0) return null;
+        // meer na-foto's dan Udo voor-foto's stuurde). Groepering is nu
+        // eerst per dienst (foto.dienst, in de volgorde van p.diensten), de
+        // koppeling zelf wordt daarna binnen elke dienst-groep gedaan — een
+        // voor/na-paar hoort dus alleen bij elkaar in het rapport als Bas ze
+        // aan dezelfde dienst heeft getagd. Wat overblijft (ongetagd, of een
+        // dienst die niet meer in p.diensten staat) komt als "Algemeen"
+        // achteraan — elke foto komt zo altijd exact één keer voor, nooit
+        // stilzwijgend kwijt.
+        const matchGroep = (voorSubset, naSubset) => {
+          const gekoppeld = naSubset.filter((n) => n.voorFotoId && voorSubset.some((v) => v.id === n.voorFotoId));
+          const naLos = naSubset.filter((n) => !gekoppeld.includes(n));
+          const gekoppeldeVoorIds = new Set(gekoppeld.map((n) => n.voorFotoId));
+          const voorLos = voorSubset.filter((v) => !gekoppeldeVoorIds.has(v.id));
+          return { gekoppeld, voorLos, naLos };
+        };
+        const getagd = new Set(p.diensten);
+        const groepen = p.diensten
+          .map((dienst) => {
+            const voorSubset = r.voorFotos.filter((v) => (v.dienst || "") === dienst);
+            const naSubset = r.naFotos.filter((n) => (n.dienst || "") === dienst);
+            return { titel: dienst, ...matchGroep(voorSubset, naSubset) };
+          })
+          .filter((gr) => gr.gekoppeld.length || gr.voorLos.length || gr.naLos.length);
+        const voorAlgemeen = r.voorFotos.filter((v) => !getagd.has(v.dienst || ""));
+        const naAlgemeen = r.naFotos.filter((n) => !getagd.has(n.dienst || ""));
+        if (voorAlgemeen.length || naAlgemeen.length) {
+          groepen.push({ titel: "Algemeen", ...matchGroep(voorAlgemeen, naAlgemeen) });
+        }
+        if (!groepen.length) return null;
+        // Geen subkopjes tonen als er toch maar één groep is en dat de
+        // ongetagde restgroep is — dan is er niets te onderscheiden en blijft
+        // het rapport zoals voorheen (vóór dienst-tagging bestond).
+        const toonSubkoppen = !(groepen.length === 1 && groepen[0].titel === "Algemeen");
         return (
           <div className="mt-5">
             <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }} className="mb-2">Voor en na</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {gekoppeld.map((n) => {
-                const v = p.voorFotos.find((vv) => vv.id === n.voorFotoId);
-                return (
-                  <React.Fragment key={n.id}>
-                    <FotoCel foto={v} label="voor" />
-                    <FotoCel foto={n} label="na" />
-                  </React.Fragment>
-                );
-              })}
-              {voorLos.map((v) => <FotoCel key={v.id} foto={v} label="voor" />)}
-              {naLos.map((n) => <FotoCel key={n.id} foto={n} label="na" />)}
-            </div>
+            {groepen.map((gr) => (
+              <div key={gr.titel} className="mt-3 first:mt-0">
+                {toonSubkoppen && (
+                  <h3 className="text-sm font-medium mb-2" style={{ color: "#6B5B7B" }}>{gr.titel}</h3>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  {gr.gekoppeld.map((n) => {
+                    const v = r.voorFotos.find((vv) => vv.id === n.voorFotoId);
+                    return (
+                      <React.Fragment key={n.id}>
+                        <FotoCel foto={v} label="voor" />
+                        <FotoCel foto={n} label="na" />
+                      </React.Fragment>
+                    );
+                  })}
+                  {gr.voorLos.map((v) => <FotoCel key={v.id} foto={v} label="voor" />)}
+                  {gr.naLos.map((n) => <FotoCel key={n.id} foto={n} label="na" />)}
+                </div>
+              </div>
+            ))}
           </div>
         );
       })()}
 
       <p className="text-xs mt-8 pt-3" style={{ color: "#6B6076", borderTop: "1px solid #E4DEE9" }}>
         Antoni Hristov · gumclean.nl · 06 4221 0739 · info@gumclean.nl · KvK 42082782
+        <br />
+        {r.gegenereerdOp
+          ? "Rapport gegenereerd op " + datumTijdNL(r.gegenereerdOp)
+          : <span style={{ color: "#B3A8BC" }}>(nog niet vergrendeld)</span>}
       </p>
     </div>
   );
@@ -767,7 +855,7 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
         const res = await fetch("/api/fotos?pandId=" + p.id + "&type=" + type, {
           method: "POST", headers: { "Content-Type": "image/jpeg" }, body: blob,
         });
-        if (res.ok) nieuw.push({ id: crypto.randomUUID(), pathname: (await res.json()).pathname, omschrijving: "", voorFotoId: "" });
+        if (res.ok) nieuw.push({ id: crypto.randomUUID(), pathname: (await res.json()).pathname, omschrijving: "", voorFotoId: "", dienst: "" });
       }
     } finally {
       setUploadBezig(false);
@@ -788,6 +876,23 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
   // Anton meer (of andere) na-foto's stuurt dan er voor-foto's zijn.
   const wijzigFotoKoppeling = (naFoto, voorFotoId) =>
     wijzigPand(p.id, { naFotos: p.naFotos.map((f) => (f.id === naFoto.id ? { ...f, voorFotoId } : f)) });
+  // Welke dienst (uit p.diensten) een foto documenteert — bepaalt de
+  // groepering in het opleverrapport, zie OpleverrapportDocument.
+  const wijzigFotoDienst = (type, foto, dienst) => {
+    const veld = type === "voor" ? "voorFotos" : "naFotos";
+    wijzigPand(p.id, { [veld]: p[veld].map((f) => (f.id === foto.id ? { ...f, dienst } : f)) });
+  };
+  // Opleverrapport vergrendelen/ontgrendelen — zie OpleverrapportDocument
+  // voor de reden (zelfde snapshot-patroon als offerte.regels).
+  const vergrendelRapport = () => wijzigPand(p.id, {
+    opleverrapportVergrendeld: true,
+    opleverrapportSnapshot: {
+      werkzaamheden: p.werkzaamheden, extraWerkzaamheden: p.extraWerkzaamheden,
+      voorFotos: p.voorFotos, naFotos: p.naFotos, afgerondOp: p.afgerondOp,
+      gegenereerdOp: new Date().toISOString(),
+    },
+  });
+  const ontgrendelRapport = () => wijzigPand(p.id, { opleverrapportVergrendeld: false, opleverrapportSnapshot: null });
 
   const begroteEenheidUur = p.begrootEenheid === "uur";
   const factuurtekst = [
@@ -980,7 +1085,8 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
             <FotoUpload label="Foto's toevoegen" bezig={uploadBezig} onFiles={(files) => uploadFotos("voor", files)} />
           </div>
           <FotoGrid fotos={p.voorFotos} onVerwijder={(f) => verwijderFoto("voor", f)}
-            onOmschrijving={(f, v) => wijzigFotoOmschrijving("voor", f, v)} />
+            onOmschrijving={(f, v) => wijzigFotoOmschrijving("voor", f, v)}
+            dienstOpties={p.diensten} onDienst={(f, v) => wijzigFotoDienst("voor", f, v)} />
         </div>
         <div className="mt-4">
           <div className="flex items-center justify-between">
@@ -989,10 +1095,12 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
           </div>
           <FotoGrid fotos={p.naFotos} onVerwijder={(f) => verwijderFoto("na", f)}
             onOmschrijving={(f, v) => wijzigFotoOmschrijving("na", f, v)}
+            dienstOpties={p.diensten} onDienst={(f, v) => wijzigFotoDienst("na", f, v)}
             koppelOpties={p.voorFotos} onKoppel={wijzigFotoKoppeling} />
           <p className="text-xs mt-1" style={{ color: "#8A7B98" }}>
             Koppel elke na-foto aan de bijpassende voor-foto, zodat ze in het opleverrapport goed naast elkaar staan
-            — niet gekoppelde foto's komen los in het rapport te staan.
+            — niet gekoppelde foto's komen los in het rapport te staan. Tag voor- én na-foto met dezelfde dienst
+            om ze in het rapport bij elkaar te houden; ongetagde foto's komen onder "Algemeen".
           </p>
         </div>
       </Kaart>
@@ -1293,10 +1401,21 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
         <div className="flex items-center gap-2 mb-3">
           <CheckCircle2 size={16} style={{ color: ROZE }} />
           <h3 style={{ fontFamily: "Fredoka", color: INK }}>Opleverrapport voor de klant</h3>
-          <span className="ml-auto">
+          <span className="ml-auto flex items-center gap-2">
+            {p.opleverrapportVergrendeld ? (
+              <Knop variant="wit" klein onClick={ontgrendelRapport}>Ontgrendelen</Knop>
+            ) : (
+              <Knop variant="wit" klein onClick={vergrendelRapport}>Rapport vergrendelen</Knop>
+            )}
             <Knop variant="wit" klein onClick={() => setPrintKaart("oplever")}>Print / opslaan als pdf</Knop>
           </span>
         </div>
+        {p.opleverrapportVergrendeld && p.opleverrapportSnapshot && (
+          <p className="text-xs mb-3 px-3 py-2 rounded-lg" style={{ background: "#F5EFF8", color: "#6B5B7B" }}>
+            Rapport vergrendeld op {datumNL(new Date(p.opleverrapportSnapshot.gegenereerdOp))}, latere wijzigingen
+            aan werkzaamheden/foto's komen hier niet meer in.
+          </p>
+        )}
         <OpleverrapportDocument p={p} k={k} />
       </Kaart>
       <PrintPortaal actief={printKaart === "oplever"}><OpleverrapportDocument p={p} k={k} /></PrintPortaal>
