@@ -405,24 +405,56 @@ hoofdrepo:
   opdracht wijkt soms af van de offerte (zie de Drachten-discrepantie in
   DESTINATION-registratietool.md), en een live-berekende offerte zou zo'n
   latere pandwijziging met terugwerkende kracht in een al verstuurd document
-  laten verschijnen. Optionele secties (onderhoudscontract, lichtreclame)
-  aan/uit per offerte.
+  laten verschijnen. Optionele secties (onderhoudscontract, opties) aan/uit
+  per offerte.
 - **`spoedopdracht`** — een eenmalige klus voor één pand/klant, zoals offerte
   2026-003 (verfvlekken Geldrop). Grotendeels vrije tekst (`situatie`,
   `aanpak`, `risicos`, `praktisch`) — dat schrijft Bas zelf, elke situatie is
   anders. Prijs is een losse regelslijst (`prijsregels`, net als
-  `extraWerkzaamheden` op het pand) plus `voorrijkosten`, niet gekoppeld aan
-  een pand se `begrootMandagen`.
+  `extraWerkzaamheden` op het pand) plus `voorrijkosten` met een optionele
+  `voorrijkostenOmschrijving` (bv. "Hoofddorp – Geldrop v.v., ca. 240 km") —
+  niet gekoppeld aan een pand se `begrootMandagen`.
 
 Sectienummers in het gerenderde document (`nrs` in `OfferteScherm`) worden
 doorgeteld i.p.v. hardgecodeerd, want optionele secties (onderhoudscontract,
-lichtreclame, of lege vrije-tekstvelden bij een spoedopdracht) verschuiven de
+opties, of lege vrije-tekstvelden bij een spoedopdracht) verschuiven de
 nummering — een vast nummer zou gaten of dubbele nummers geven zodra niet
 alle secties getoond worden.
 
+**`aanhef` is de volledige, vrij te typen groetregel** (bv. "Geachte heer
+Blauw, beste Udo,"), niet alleen een naam-suffix. Eerdere versie plakte er
+automatisch "Geachte " voor, wat niet altijd de gewenste toon was (bv.
+"Beste Udo," bij een bekende klant) — nu typt Bas de hele regel zelf.
+
+**`opties`** is een vrije regelslijst (`{omschrijving, bedrag}`, zelfde
+add/remove-patroon als `prijsregels`/`extraWerkzaamheden`) voor optionele
+keuzes die de klant kan afnemen — bv. lichtreclame reinigen, extra
+glazenwas. Vervangt de eerdere vaste `lichtreclameOptie`-checkbox: niet elke
+offerte heeft dezelfde optionele extra's nodig. Werkt voor beide
+offertetypes, staat als eigen sectie + eigen ☐-regels in het akkoordblok.
+
+**"Zet om naar opdracht"** verschijnt zodra de status op "Akkoord" staat
+(zie hieronder), en voorkomt dubbel typen van wat al in de offerte staat:
+
+- Bij `meerdere-panden` bestaan de panden al (dat is waar de regels
+  vandaan komen bij "Regels overnemen") — de knop schrijft alleen de
+  uiteindelijk afgesproken `mandagen`/`hoogwerker` uit `offerte.regels`
+  terug naar die panden, voor het geval er tijdens het onderhandelen iets
+  afweek van de eerste regel (zie de Drachten-discrepantie hieronder).
+- Bij `spoedopdracht` bestaat er nog geen pand — de knop maakt er een aan
+  (`LEEG_PAND(o.klantId)`) met `adres` (uit `voorAdres`), `voorrijkosten`,
+  `begrootEenheid: "uur"`, en `instructies` gevuld met `aanpak` + `praktisch`
+  samengevoegd — de voorbereiding voor Anton staat er dus al zonder dat Bas
+  het opnieuw hoeft te typen. Navigeert meteen naar het nieuwe pand.
+
+`offerte.omgezetNaarPandId` onthoudt dat het al gebeurd is (voorkomt een
+dubbel pand bij nogmaals klikken); de knop toont daarna een link naar het
+resultaat in plaats van zichzelf opnieuw aan te bieden.
+
 Offertenummers zijn doorlopend per jaar (`2026-001`, `2026-002`...),
 `volgendOffertenummer()` pakt het hoogste bestaande nummer van het huidige
-jaar + 1.
+jaar + 1 als startwaarde bij het aanmaken — het offertenummer-veld zelf is
+daarna gewoon een tekstveld, vrij aan te passen.
 
 Opmaak volgt `gumclean-design-system-v2.md`, inclusief het genummerde
 sectiekop-blok (`OfferteSectie`, roze nummerblok + titel — §4) en de

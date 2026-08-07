@@ -198,6 +198,29 @@ Dezelfde data levert vier uitkomsten:
   staan — de foto's en hun tags wel, maar de volgorde/indeling zelf mag altijd
   meebewegen met het pand, want dat is puur presentatie, geen inhoud die naar
   de klant is gegaan.
+- **"Zet om naar opdracht" verschijnt pas bij status "Akkoord", en is een
+  bewuste knop, geen automatisch gevolg van de statuswijziging.** Bas vroeg
+  hier expliciet om ("scheelt dubbel werk"): bij een spoedopdracht bestond er
+  nog geen pand, dus werd na een akkoord alles opnieuw getypt in Opdrachten.
+  Geen auto-actie bij het omzetten van de dropdown naar "akkoord" — dat voelde
+  te riskant (een pand aanmaken of panden overschrijven mag niet per ongeluk
+  gebeuren door een simpele statuswijziging). `omgezetNaarPandId` onthoudt
+  dat het al gebeurd is, zodat een tweede klik geen dubbel pand aanmaakt.
+- **Bij `meerdere-panden` schrijft "omzetten" de definitieve regel-cijfers
+  terug naar de al bestaande panden, i.p.v. nieuwe panden aan te maken.**
+  De panden bestonden namelijk al vóór de offerte (dat is waar de regels
+  vandaan komen). Dit is ook de plek waar een Drachten-achtige discrepantie
+  (offerte zei 4 mandagen, uiteindelijk akkoord op 6) voortaan automatisch
+  wordt rechtgezet in plaats van dat Bas het los moet onthouden en handmatig
+  bijwerken.
+- **`opties` is een vrije regelslijst i.p.v. een vaste `lichtreclameOptie`-
+  checkbox.** Eerste versie had precies één hardgecodeerde optie
+  (lichtreclame). Niet elke offerte heeft dezelfde losse extra's nodig —
+  zelfde regel-editor-patroon als `prijsregels`/`extraWerkzaamheden`, geen
+  vaste velden per mogelijke optie.
+- **`aanhef` is de volledige groetregel, geen naam-suffix met automatisch
+  "Geachte" ervoor.** Bas wil zelf kunnen kiezen tussen "Geachte heer Blauw"
+  en "Beste Udo" — een hardgecodeerd prefix paste niet bij elke klantrelatie.
 
 ## Explicitly out of scope
 
