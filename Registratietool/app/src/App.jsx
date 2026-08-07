@@ -1812,8 +1812,12 @@ function OfferteDocument({ o, k, data, nrs, totaalMeerderePanden, onderhoudTotaa
 }
 
 function OfferteScherm({ id, data, wijzigOfferte, bewaar, setScherm }) {
-  const o = data.offertes.find((x) => x.id === id);
-  if (!o) return null;
+  const oRaw = data.offertes.find((x) => x.id === id);
+  if (!oRaw) return null;
+  // Offertes opgeslagen vóór nieuwe velden (bv. opties) bestonden missen die
+  // anders — zelfde patroon als bij PandScherm: aanvullen met de
+  // standaardwaarden uit LEEG_OFFERTE, zonder bestaande data te overschrijven.
+  const o = { ...LEEG_OFFERTE(oRaw.klantId, oRaw.type), ...oRaw };
   const k = data.klanten.find((x) => x.id === o.klantId);
   const pandenVanKlant = data.panden.filter((x) => x.klantId === o.klantId);
 
