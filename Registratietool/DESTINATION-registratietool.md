@@ -175,8 +175,8 @@ Dezelfde data levert vier uitkomsten:
   of foto die Bas ná het versturen nog aanpast (of verwijdert) stilletjes in
   een heropend/herprint rapport verschijnen — precies het probleem dat de
   offerte-snapshot al oploste voor `offerte.regels` (zie hierboven), nu
-  opnieuw voor `p.werkzaamheden`/`p.extraWerkzaamheden`/`p.voorFotos`/
-  `p.naFotos`/`p.afgerondOp`. Bewust géén auto-lock op het print-moment: Bas
+  opnieuw voor `p.werkzaamheden`/`p.extraWerkzaamheden`/`p.geoffreerdeKosten`/
+  `p.voorFotos`/`p.naFotos`/`p.afgerondOp`. Bewust géén auto-lock op het print-moment: Bas
   print/bekijkt de preview vaak nog terwijl hij aan het draft is, en dat mag
   vrij blijven — vergrendelen ("Rapport vergrendelen"-knop) is een aparte,
   bewuste stap met een eigen "Ontgrendelen" terug-knop voor als het per
@@ -198,16 +198,20 @@ Dezelfde data levert vier uitkomsten:
   staan — de foto's en hun tags wel, maar de volgorde/indeling zelf mag altijd
   meebewegen met het pand, want dat is puur presentatie, geen inhoud die naar
   de klant is gegaan.
-- **`prijsregels` van een spoedopdracht-offerte gaan mee als
-  `extraWerkzaamheden` bij "Zet om naar opdracht".** Bas belast soms kosten
-  door die geen mandagen zijn — bv. "Materiaal en verbruik, incl.
-  osmosewater". Op een spoedopdracht-offerte staat daar al ruimte voor
-  (`prijsregels`, omschrijving + bedrag, telt mee in het totaal), maar de
-  omzetting naar een opdracht droeg dat bedrag niet over — een spoedopdracht
-  heeft geen mandagen/dagtarief, dus zonder deze koppeling verdween het hele
-  doorbelaste bedrag zodra de offerte een pand werd. `extraWerkzaamheden` was
-  al het juiste doel: telt mee in `omzet`, staat al op de factuurregels en het
-  opleverrapport.
+- **Doorbelaste kosten op een pand splitsen in `geoffreerdeKosten` (al in de
+  offerte) en `extraWerkzaamheden` (buiten de offerte).** Eerste versie van
+  deze koppeling stopte alles in `extraWerkzaamheden`, maar Bas gaf aan dat
+  dat twee verschillende dingen door elkaar gooit: meestal is een
+  doorbelaste kost (materiaal en verbruik, bv. osmosewater) al onderdeel van
+  de afgesproken offerteprijs — geen verrassing voor de klant — terwijl
+  `extraWerkzaamheden` bedoeld is voor wat Anton er onderweg ongepland bij
+  doet (graffiti, grofvuil). Allebei dezelfde vorm (`{omschrijving, bedrag}`,
+  telt mee in `omzet`, staat op de factuurregels), maar als losse Kaart en
+  losse sectie op het opleverrapport, zodat het verschil zichtbaar blijft.
+  `prijsregels` van een spoedopdracht-offerte gaan bij "Zet om naar opdracht"
+  mee als `geoffreerdeKosten` (niet `extraWerkzaamheden`) — die kosten stonden
+  immers al in de offerte, een spoedopdracht heeft alleen geen
+  mandagen/dagtarief om ze anders in onder te brengen.
 - **Geen database toegevoegd na het Blob-storage-incident van begin augustus
   2026.** De Vercel Blob store bleek zonder waarschuwing volledig leeg (0
   bestanden) na een account-verhuizing naar Bas' pro-account — zowel foto's

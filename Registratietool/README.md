@@ -144,6 +144,9 @@ pand           klantId, routeId, naam, adres, filiaalnummer, grootboek,
   ├ uren       datum, uren, omschrijving
   ├ ritten     datum, km, type (zakelijk|prive), doel
   ├ materieel  array van labels
+  ├ geoffreerdeKosten    { omschrijving, bedrag } — zat al in de offerte
+  │                        (materiaal en verbruik, gehuurde apparatuur...),
+  │                        bedrag telt mee in omzet
   ├ extraWerkzaamheden  { omschrijving, bedrag } — buiten de offerte gedaan
   │                        (graffiti, grofvuil...), bedrag telt mee in omzet
   ├ voorFotos  { id, pathname, omschrijving, dienst } — foto's van Udo, wat er
@@ -201,7 +204,8 @@ rechtstreeks.
 
 ```
 omzet      = (begrootMandagen × dagtarief, of × dagtarief/8 als uren) + voorrijkosten
-             + extraOmzet (som van extraWerkzaamheden[].bedrag — werk buiten de offerte)
+             + extraOmzet (som van geoffreerdeKosten[].bedrag + extraWerkzaamheden[].bedrag —
+               resp. kosten die al in de offerte zaten, en werk/kosten daarbuiten)
 reiskosten = zakelijke km × 0,25
 marge      = omzet − reiskosten − verbruik      ← fiscaal relevant
 arbeid     = effectieve uren × uurloon           ← rekenprijs, geen kostenpost
@@ -383,7 +387,8 @@ rapport stilletjes iets anders zien dan wat er echt naar de klant ging. De
 knop "Rapport vergrendelen" op de Opleverrapport-kaart zet
 `opleverrapportVergrendeld: true` en vangt een snapshot
 (`opleverrapportSnapshot`) van `werkzaamheden`, `extraWerkzaamheden`,
-`voorFotos`, `naFotos`, `afgerondOp` en een vers `gegenereerdOp`-tijdstempel
+`geoffreerdeKosten`, `voorFotos`, `naFotos`, `afgerondOp` en een vers
+`gegenereerdOp`-tijdstempel
 (ISO-string, `new Date().toISOString()` op vergrendelmoment). Zolang
 vergrendeld, rendert het document uit die snapshot in plaats van uit de live
 pandvelden; een "Ontgrendelen"-knop zet beide velden terug naar
@@ -434,9 +439,9 @@ hoofdrepo:
   2026-003 (verfvlekken Geldrop). Grotendeels vrije tekst (`situatie`,
   `aanpak`, `risicos`, `praktisch`) — dat schrijft Bas zelf, elke situatie is
   anders. Prijs is een losse regelslijst (`prijsregels`, net als
-  `extraWerkzaamheden` op het pand) plus `voorrijkosten` met een optionele
-  `voorrijkostenOmschrijving` (bv. "Hoofddorp – Geldrop v.v., ca. 240 km") —
-  niet gekoppeld aan een pand se `begrootMandagen`.
+  `geoffreerdeKosten`/`extraWerkzaamheden` op het pand) plus `voorrijkosten`
+  met een optionele `voorrijkostenOmschrijving` (bv. "Hoofddorp – Geldrop
+  v.v., ca. 240 km") — niet gekoppeld aan een pand se `begrootMandagen`.
 
 Sectienummers in het gerenderde document (`nrs` in `OfferteScherm`) worden
 doorgeteld i.p.v. hardgecodeerd, want optionele secties (onderhoudscontract,
@@ -470,7 +475,7 @@ offertetypes, staat als eigen sectie + eigen ☐-regels in het akkoordblok.
   samengevoegd — de voorbereiding voor Anton staat er dus al zonder dat Bas
   het opnieuw hoeft te typen. Navigeert meteen naar het nieuwe pand.
   `prijsregels` (bv. "Materiaal en verbruik, incl. osmosewater") gaan mee
-  als `extraWerkzaamheden` op het nieuwe pand — een spoedopdracht heeft geen
+  als `geoffreerdeKosten` op het nieuwe pand — een spoedopdracht heeft geen
   mandagen/dagtarief, dus zonder deze overname verdween het hele
   doorbelaste bedrag zodra de offerte een opdracht werd.
 

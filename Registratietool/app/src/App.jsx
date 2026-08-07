@@ -49,7 +49,7 @@ const LEEG_PAND = (klantId) => ({
   onderhoudsintervalMaanden: 0,
   contactpersoonTerPlaatse: "", telefoonTerPlaatse: "", instructies: "",
   voorOmschrijving: "", voorFotos: [], naFotos: [], afgerondOp: "",
-  materieel: [], uren: [], ritten: [], verbruik: [], extraWerkzaamheden: [],
+  materieel: [], uren: [], ritten: [], verbruik: [], extraWerkzaamheden: [], geoffreerdeKosten: [],
   // Opleverrapport vergrendelen bevriest het (zie OpleverrapportDocument):
   // snapshot vangt werkzaamheden/extraWerkzaamheden/foto's/afgerondOp op het
   // moment van vergrendelen, zodat latere wijzigingen een al verstuurd
@@ -240,12 +240,17 @@ const cijfers = (data, p) => {
   const begroteMandagen = begroteEenheidUur ? num(p.begrootMandagen) / 8 : num(p.begrootMandagen);
   const omzetBasis = begroteEenheidUur ? num(p.begrootMandagen) * (tarief / 8) : num(p.begrootMandagen) * tarief;
   const voorrijkosten = num(p.voorrijkosten);
-  // Extra werkzaamheden buiten de offerte (graffiti, grofvuil, extra vieze
-  // stoep...) die Anton achteraf meldt — telt mee in de omzet, anders oogt
-  // de nacalculatie te negatief bij een klus met extra's die wél gefactureerd
-  // worden. (p.extraWerkzaamheden || []) omdat oudere panden dit veld nog
-  // niet hebben.
-  const extraOmzet = (p.extraWerkzaamheden || []).reduce((s, x) => s + num(x.bedrag), 0);
+  // Twee soorten doorbelaste kosten, allebei omschrijving+bedrag maar met een
+  // ander verhaal: geoffreerdeKosten zat al in de offerte (bv. materiaal en
+  // verbruik, osmosewater — een vooraf bekende kostenpost, geen verrassing),
+  // extraWerkzaamheden is wat Anton er onderweg bij heeft gedaan en dus niet
+  // in de offerte stond (graffiti, grofvuil, extra vieze stoep). Beide tellen
+  // mee in de omzet, anders oogt de nacalculatie te negatief bij een klus met
+  // extra's die wél gefactureerd worden. (|| []) omdat oudere panden deze
+  // velden nog niet hebben.
+  const geoffreerdeKostenOmzet = (p.geoffreerdeKosten || []).reduce((s, x) => s + num(x.bedrag), 0);
+  const extraWerkzaamhedenOmzet = (p.extraWerkzaamheden || []).reduce((s, x) => s + num(x.bedrag), 0);
+  const extraOmzet = geoffreerdeKostenOmzet + extraWerkzaamhedenOmzet;
   const omzet = omzetBasis + voorrijkosten + extraOmzet;
 
   const reiskosten = kmZakelijk * KM_TARIEF;
@@ -315,7 +320,8 @@ const cijfers = (data, p) => {
 
   return {
     tarief, uurloon, gewerkteUren, effectieveUren, mandagenWerkelijk: effectieveUren / 8, kmZakelijk, kmPrive,
-    materiaal, omzetBasis, voorrijkosten, extraOmzet, omzet, reiskosten, arbeid, kosten, marge, resultaat, liters,
+    materiaal, omzetBasis, voorrijkosten, geoffreerdeKostenOmzet, extraWerkzaamhedenOmzet, extraOmzet, omzet,
+    reiskosten, arbeid, kosten, marge, resultaat, liters,
     diesel: liters * num(data.instellingen.dieselprijs),
     effectief: effectieveUren > 0 ? marge / effectieveUren : 0,
     dekking: arbeid > 0 ? marge / arbeid : 0,
@@ -793,7 +799,7 @@ function OpleverrapportDocument({ p, k }) {
   const r = p.opleverrapportVergrendeld && p.opleverrapportSnapshot
     ? p.opleverrapportSnapshot
     : {
-        werkzaamheden: p.werkzaamheden, extraWerkzaamheden: p.extraWerkzaamheden,
+        werkzaamheden: p.werkzaamheden, extraWerkzaamheden: p.extraWerkzaamheden, geoffreerdeKosten: p.geoffreerdeKosten,
         voorFotos: p.voorFotos, naFotos: p.naFotos, afgerondOp: p.afgerondOp, gegenereerdOp: null,
       };
 
@@ -816,6 +822,17 @@ function OpleverrapportDocument({ p, k }) {
         <div className="mt-5">
           <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }}>Uitgevoerde werkzaamheden</h2>
           <p style={{ color: "#1A0A2E" }}>{r.werkzaamheden}</p>
+        </div>
+      )}
+
+      {(r.geoffreerdeKosten || []).length > 0 && (
+        <div className="mt-5">
+          <h2 style={{ fontFamily: "Fredoka", fontSize: "1.125rem", color: "#1A0A2E" }}>Gebruikt materiaal en kosten (in de offerte)</h2>
+          <ul style={{ color: "#1A0A2E" }}>
+            {r.geoffreerdeKosten.map((x, i) => (
+              <li key={i}>{x.omschrijving}{num(x.bedrag) > 0 ? " — " + eur(x.bedrag) + " excl. btw" : ""}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -976,7 +993,7 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
   const vergrendelRapport = () => wijzigPand(p.id, {
     opleverrapportVergrendeld: true,
     opleverrapportSnapshot: {
-      werkzaamheden: p.werkzaamheden, extraWerkzaamheden: p.extraWerkzaamheden,
+      werkzaamheden: p.werkzaamheden, extraWerkzaamheden: p.extraWerkzaamheden, geoffreerdeKosten: p.geoffreerdeKosten,
       voorFotos: p.voorFotos, naFotos: p.naFotos, afgerondOp: p.afgerondOp,
       gegenereerdOp: new Date().toISOString(),
     },
@@ -997,12 +1014,14 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
     "Opdrachtgever: " + (k?.contactpersoon || "[onbekend]"),
     "",
     "Uitgevoerde werkzaamheden: " + (p.werkzaamheden || "[werkzaamheden ontbreekt]"),
-    p.extraWerkzaamheden.length > 0 ? "Extra werkzaamheden en kosten:" : "",
+    (p.geoffreerdeKosten || []).length > 0 ? "Doorbelaste kosten (in de offerte):" : "",
+    ...(p.geoffreerdeKosten || []).map((x) => "  - " + (x.omschrijving || "[omschrijving ontbreekt]") + (num(x.bedrag) > 0 ? " (" + eur(x.bedrag) + ")" : "")),
+    p.extraWerkzaamheden.length > 0 ? "Extra werkzaamheden (buiten de offerte):" : "",
     ...p.extraWerkzaamheden.map((x) => "  - " + (x.omschrijving || "[omschrijving ontbreekt]") + (num(x.bedrag) > 0 ? " (" + eur(x.bedrag) + ")" : "")),
     "",
     p.begrootMandagen + (begroteEenheidUur ? " uur à " + eur0(g.tarief / 8) : " mandagen à " + eur0(g.tarief))
       + (num(p.voorrijkosten) > 0 ? " + " + eur(p.voorrijkosten) + " voorrijkosten" : "")
-      + (g.extraOmzet > 0 ? " + " + eur(g.extraOmzet) + " extra werkzaamheden" : "")
+      + (g.extraOmzet > 0 ? " + " + eur(g.extraOmzet) + " kosten en extra werkzaamheden" : "")
       + " = " + eur(g.omzet) + " excl. btw",
     p.hoogwerker ? "Hoogwerkerhuur doorbelast: " + eur(p.doorbelast) : "",
     "Betaaltermijn: " + (k?.betaaltermijn || 60) + " dagen",
@@ -1298,17 +1317,41 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
         </Knop>
       </Kaart>
 
-      {/* Extra werkzaamheden */}
+      {/* Doorbelaste kosten, al in de offerte */}
+      <Kaart>
+        <div className="flex items-center gap-2 mb-3">
+          <Package size={16} style={{ color: ROZE }} />
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Doorbelaste kosten (in de offerte)</h3>
+          {g.geoffreerdeKostenOmzet > 0 && <span className="ml-auto text-sm" style={{ color: "#6B5B7B" }}>{eur(g.geoffreerdeKostenOmzet)}</span>}
+        </div>
+        <p className="text-xs mb-3" style={{ color: "#8A7B98" }}>
+          Kosten die al onderdeel waren van de afgesproken prijs, zoals materiaal en verbruik (bv. osmosewater) of
+          gehuurde apparatuur — geen verrassing voor de klant. Telt mee in de omzet hieronder én in de factuurregels.
+        </p>
+        {(p.geoffreerdeKosten || []).map((x, i) => (
+          <div key={i} className="grid grid-cols-12 gap-2 mb-2 items-center">
+            <input value={x.omschrijving} placeholder="omschrijving" onChange={(e) => wijzigRij("geoffreerdeKosten", i, { omschrijving: e.target.value })}
+              className="col-span-8 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: "#E4DCEA", color: INK }} />
+            <input type="number" step="0.01" value={x.bedrag} placeholder="bedrag" onChange={(e) => wijzigRij("geoffreerdeKosten", i, { bedrag: e.target.value })}
+              className="col-span-3 px-2 py-1.5 rounded-lg text-sm border" style={{ borderColor: "#E4DCEA", color: INK }} />
+            <button onClick={() => weg("geoffreerdeKosten", i)} className="col-span-1 flex justify-center"><Trash2 size={14} style={{ color: "#B9A9C4" }} /></button>
+          </div>
+        ))}
+        <Knop variant="wit" klein onClick={() => voegToe("geoffreerdeKosten", { omschrijving: "", bedrag: "" })}>
+          <span className="flex items-center gap-1"><Plus size={13} /> Regel toevoegen</span>
+        </Knop>
+      </Kaart>
+
+      {/* Extra werkzaamheden, buiten de offerte */}
       <Kaart>
         <div className="flex items-center gap-2 mb-3">
           <AlertTriangle size={16} style={{ color: ROZE }} />
-          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Extra werkzaamheden & kosten</h3>
-          {g.extraOmzet > 0 && <span className="ml-auto text-sm" style={{ color: "#6B5B7B" }}>{eur(g.extraOmzet)}</span>}
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Extra werkzaamheden (buiten de offerte)</h3>
+          {g.extraWerkzaamhedenOmzet > 0 && <span className="ml-auto text-sm" style={{ color: "#6B5B7B" }}>{eur(g.extraWerkzaamhedenOmzet)}</span>}
         </div>
         <p className="text-xs mb-3" style={{ color: "#8A7B98" }}>
-          Alles wat u apart aan de klant doorberekent: werk dat Anton er onderweg bij heeft gedaan (graffiti,
-          grofvuil, een extra vieze stoep), of doorbelaste materiaalkosten zoals osmosewater. Bedrag is optioneel;
-          met bedrag telt het mee in de omzet hieronder én in de factuurregels.
+          Wat Anton er onderweg bij heeft gedaan, boven op de offerte — graffiti, grofvuil, een extra vieze stoep.
+          Bedrag is optioneel; met bedrag telt het mee in de omzet hieronder én in de factuurregels.
         </p>
         {p.extraWerkzaamheden.map((x, i) => (
           <div key={i} className="grid grid-cols-12 gap-2 mb-2 items-center">
@@ -1350,10 +1393,16 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
               <span style={{ color: INK }}>{eur(g.voorrijkosten)}</span>
             </div>
           )}
-          {g.extraOmzet > 0 && (
+          {g.geoffreerdeKostenOmzet > 0 && (
+            <div className="flex justify-between py-1.5" style={{ borderBottom: "1px solid #F3EDF7" }}>
+              <span style={{ color: "#6B5B7B" }}>Doorbelaste kosten (in de offerte)</span>
+              <span style={{ color: INK }}>{eur(g.geoffreerdeKostenOmzet)}</span>
+            </div>
+          )}
+          {g.extraWerkzaamhedenOmzet > 0 && (
             <div className="flex justify-between py-1.5" style={{ borderBottom: "1px solid #F3EDF7" }}>
               <span style={{ color: "#6B5B7B" }}>Extra werkzaamheden (buiten de offerte)</span>
-              <span style={{ color: INK }}>{eur(g.extraOmzet)}</span>
+              <span style={{ color: INK }}>{eur(g.extraWerkzaamhedenOmzet)}</span>
             </div>
           )}
           {[
@@ -1914,10 +1963,12 @@ function OfferteScherm({ id, data, wijzigOfferte, bewaar, setScherm }) {
         instructies: [o.aanpak, o.praktisch].filter(Boolean).join("\n\n"),
         voorOmschrijving: o.situatie,
         // Een spoedopdracht heeft geen mandagen/dagtarief — de prijsregels (bv.
-        // materiaal en verbruik, osmosewater) zíjn de afgesproken prijs. Zonder
-        // deze overname verdwijnt dat bedrag zodra de offerte een opdracht
-        // wordt, want de opdracht heeft dan alleen nog voorrijkosten.
-        extraWerkzaamheden: o.prijsregels.filter((x) => x.omschrijving || num(x.bedrag) > 0),
+        // materiaal en verbruik, osmosewater) zíjn de afgesproken prijs, dus
+        // gaan ze mee als geoffreerdeKosten (niet extraWerkzaamheden — dat is
+        // voor werk dat juist niét in de offerte stond). Zonder deze overname
+        // verdwijnt dat bedrag zodra de offerte een opdracht wordt, want de
+        // opdracht heeft dan alleen nog voorrijkosten.
+        geoffreerdeKosten: o.prijsregels.filter((x) => x.omschrijving || num(x.bedrag) > 0),
       };
       bewaar({
         ...data,
