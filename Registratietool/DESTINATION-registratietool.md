@@ -198,6 +198,26 @@ Dezelfde data levert vier uitkomsten:
   staan — de foto's en hun tags wel, maar de volgorde/indeling zelf mag altijd
   meebewegen met het pand, want dat is puur presentatie, geen inhoud die naar
   de klant is gegaan.
+- **`prijsregels` van een spoedopdracht-offerte gaan mee als
+  `extraWerkzaamheden` bij "Zet om naar opdracht".** Bas belast soms kosten
+  door die geen mandagen zijn — bv. "Materiaal en verbruik, incl.
+  osmosewater". Op een spoedopdracht-offerte staat daar al ruimte voor
+  (`prijsregels`, omschrijving + bedrag, telt mee in het totaal), maar de
+  omzetting naar een opdracht droeg dat bedrag niet over — een spoedopdracht
+  heeft geen mandagen/dagtarief, dus zonder deze koppeling verdween het hele
+  doorbelaste bedrag zodra de offerte een pand werd. `extraWerkzaamheden` was
+  al het juiste doel: telt mee in `omzet`, staat al op de factuurregels en het
+  opleverrapport.
+- **Geen database toegevoegd na het Blob-storage-incident van begin augustus
+  2026.** De Vercel Blob store bleek zonder waarschuwing volledig leeg (0
+  bestanden) na een account-verhuizing naar Bas' pro-account — zowel foto's
+  als de opgeslagen state waren weg, root cause nooit vastgesteld. Een
+  database lost de eigenlijke faalmodus niet op (stille, onzichtbare
+  `localStorage`-fallback bij een onbereikbare `/api/data`) en is buiten
+  proportie voor één gebruiker met een kleine dataset. In plaats daarvan: een
+  zichtbare sync-statusbanner (zie "Sync-status en backup" in README.md) en
+  een handmatige backup-downloadknop, zodat een volgende Blob-uitval opvalt
+  én herstelbaar is.
 - **"Zet om naar opdracht" verschijnt pas bij status "Akkoord", en is een
   bewuste knop, geen automatisch gevolg van de statuswijziging.** Bas vroeg
   hier expliciet om ("scheelt dubbel werk"): bij een spoedopdracht bestond er

@@ -95,6 +95,29 @@ het moment om alsnog naar een database te kijken (zie hieronder).
 De frontend valt terug op `localStorage` als `/api/data` niet bereikbaar is
 (bijv. bij `npm run dev` zonder `vercel dev`) — zie `bewaar()` in `App.jsx`.
 
+### Sync-status en backup
+
+Begin augustus 2026 bleek de Vercel Blob store zonder waarschuwing volledig
+leeg (0 bestanden) — zowel foto's als de opgeslagen state waren weg. Omdat de
+`localStorage`-fallback hierboven stil en onzichtbaar is, viel dat pas na een
+tijd op. Twee vangnetten daartegen, beide in `App.jsx`:
+
+- **Sync-statusbanner** — `serverVerbonden` state, gezet op basis van of de
+  laatste `/api/data` GET/POST is gelukt. Bij falen verschijnt een banner
+  bovenaan de app: wijzigingen blijven dan alleen lokaal in de browser staan,
+  niet gedeeld met andere apparaten.
+- **Backup-download** — knop "Backup downloaden" in het Export-scherm
+  (`downloadBackup` in `ExportScherm`), zet de hele `data`-state om naar een
+  gedateerd `.json`-bestand voor handmatige download. Geen automatisch
+  herstel — bij een volgende Blob-uitval is dit bestand de enige weg terug
+  (handmatig terugzetten via de browser-devtools of een nieuwe `POST
+  /api/data`).
+
+Geen database toegevoegd naar aanleiding van dit incident — lost de
+onderliggende faalmodus (stille fallback, geen zichtbaarheid) niet op en is
+buiten proportie voor deze schaal. Zie "Als dit naar een echte webapp gaat"
+hieronder voor wanneer dat wél de moeite waard wordt.
+
 ## Datamodel
 
 ```
@@ -446,6 +469,10 @@ offertetypes, staat als eigen sectie + eigen ☐-regels in het akkoordblok.
   `begrootEenheid: "uur"`, en `instructies` gevuld met `aanpak` + `praktisch`
   samengevoegd — de voorbereiding voor Anton staat er dus al zonder dat Bas
   het opnieuw hoeft te typen. Navigeert meteen naar het nieuwe pand.
+  `prijsregels` (bv. "Materiaal en verbruik, incl. osmosewater") gaan mee
+  als `extraWerkzaamheden` op het nieuwe pand — een spoedopdracht heeft geen
+  mandagen/dagtarief, dus zonder deze overname verdween het hele
+  doorbelaste bedrag zodra de offerte een opdracht werd.
 
 `offerte.omgezetNaarPandId` onthoudt dat het al gebeurd is (voorkomt een
 dubbel pand bij nogmaals klikken); de knop toont daarna een link naar het

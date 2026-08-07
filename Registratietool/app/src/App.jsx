@@ -997,7 +997,7 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
     "Opdrachtgever: " + (k?.contactpersoon || "[onbekend]"),
     "",
     "Uitgevoerde werkzaamheden: " + (p.werkzaamheden || "[werkzaamheden ontbreekt]"),
-    p.extraWerkzaamheden.length > 0 ? "Extra werkzaamheden buiten de offerte:" : "",
+    p.extraWerkzaamheden.length > 0 ? "Extra werkzaamheden en kosten:" : "",
     ...p.extraWerkzaamheden.map((x) => "  - " + (x.omschrijving || "[omschrijving ontbreekt]") + (num(x.bedrag) > 0 ? " (" + eur(x.bedrag) + ")" : "")),
     "",
     p.begrootMandagen + (begroteEenheidUur ? " uur à " + eur0(g.tarief / 8) : " mandagen à " + eur0(g.tarief))
@@ -1302,12 +1302,13 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
       <Kaart>
         <div className="flex items-center gap-2 mb-3">
           <AlertTriangle size={16} style={{ color: ROZE }} />
-          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Extra werkzaamheden (buiten de offerte)</h3>
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Extra werkzaamheden & kosten</h3>
           {g.extraOmzet > 0 && <span className="ml-auto text-sm" style={{ color: "#6B5B7B" }}>{eur(g.extraOmzet)}</span>}
         </div>
         <p className="text-xs mb-3" style={{ color: "#8A7B98" }}>
-          Wat Anton er onderweg bij heeft gedaan, boven op de offerte — graffiti, grofvuil, een extra vieze stoep.
-          Bedrag is optioneel; met bedrag telt het mee in de omzet hieronder én in de factuurregels.
+          Alles wat u apart aan de klant doorberekent: werk dat Anton er onderweg bij heeft gedaan (graffiti,
+          grofvuil, een extra vieze stoep), of doorbelaste materiaalkosten zoals osmosewater. Bedrag is optioneel;
+          met bedrag telt het mee in de omzet hieronder én in de factuurregels.
         </p>
         {p.extraWerkzaamheden.map((x, i) => (
           <div key={i} className="grid grid-cols-12 gap-2 mb-2 items-center">
@@ -1912,6 +1913,11 @@ function OfferteScherm({ id, data, wijzigOfferte, bewaar, setScherm }) {
         begrootEenheid: "uur",
         instructies: [o.aanpak, o.praktisch].filter(Boolean).join("\n\n"),
         voorOmschrijving: o.situatie,
+        // Een spoedopdracht heeft geen mandagen/dagtarief — de prijsregels (bv.
+        // materiaal en verbruik, osmosewater) zíjn de afgesproken prijs. Zonder
+        // deze overname verdwijnt dat bedrag zodra de offerte een opdracht
+        // wordt, want de opdracht heeft dan alleen nog voorrijkosten.
+        extraWerkzaamheden: o.prijsregels.filter((x) => x.omschrijving || num(x.bedrag) > 0),
       };
       bewaar({
         ...data,
@@ -2114,8 +2120,37 @@ function ExportScherm({ data, bewaar, gekopieerd, kopieer }) {
   });
   const csv = regels.map((r) => r.map((c) => '"' + String(c ?? "").replace(/"/g, '""') + '"').join(";")).join("\n");
   const totKm = data.panden.reduce((s, p) => s + cijfers(data, p).kmZakelijk, 0);
+
+  // Backup: de hele state als downloadbaar JSON-bestand. Enige vangnet tegen
+  // een verdwenen/losgekoppelde Blob-store (zoals begin augustus 2026) — geen
+  // automatische herstelknop, gewoon een bestand dat je zelf ergens bewaart en
+  // er bij een volgend probleem handmatig weer in kunt zetten (kopiëren in
+  // /api/data via de browser-devtools, of vraag het na te zetten).
+  const downloadBackup = () => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "gumclean-registratie-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-5">
+      <Kaart>
+        <div className="flex items-center gap-2 mb-1">
+          <h3 style={{ fontFamily: "Fredoka", color: INK }}>Backup</h3>
+          <span className="ml-auto">
+            <Knop variant="wit" klein onClick={downloadBackup}>Backup downloaden</Knop>
+          </span>
+        </div>
+        <p className="text-sm" style={{ color: "#6B5B7B" }}>
+          Downloadt de hele huidige stand (klanten, panden, offertes, instellingen) als één JSON-bestand. Doe dit af
+          en toe, en zeker vóór je iets groots wijzigt — de server-opslag (Vercel Blob) bleek begin augustus 2026
+          zomaar verdwenen te zijn, zonder waarschuwing. Dit bestand is je enige weg terug als dat weer gebeurt.
+        </p>
+      </Kaart>
       <Kaart>
         <h3 className="mb-1" style={{ fontFamily: "Fredoka", color: INK }}>Kilometerstaat</h3>
         <p className="text-sm" style={{ color: "#6B5B7B" }}>
@@ -2201,6 +2236,12 @@ export default function App() {
   const [scherm, setScherm] = useState({ naam: "overzicht" });
   const [bezig, setBezig] = useState(true);
   const [gekopieerd, setGekopieerd] = useState("");
+  // Of de laatste keer laden/opslaan écht via /api/data ging, of stilzwijgend
+  // op localStorage terugviel. Die terugval bestond al (handig lokaal zonder
+  // vercel dev) maar was onzichtbaar — een storing in de Blob-store (zoals
+  // begin augustus 2026, de store bleek verdwenen) merkte je daardoor pas op
+  // toen foto's leeg bleven, dagen later. Zie ook het "Backup"-blok in Export.
+  const [serverVerbonden, setServerVerbonden] = useState(true);
 
   // offertes bestond niet in eerder opgeslagen data — hier aanvullen zodat de
   // rest van de app altijd een array mag verwachten.
@@ -2213,7 +2254,9 @@ export default function App() {
         if (!r.ok) throw new Error("api niet beschikbaar");
         const json = await r.json();
         setData(json ? metDefaults(json) : START());
+        setServerVerbonden(true);
       } catch {
+        setServerVerbonden(false);
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           setData(raw ? metDefaults(JSON.parse(raw)) : START());
@@ -2232,7 +2275,9 @@ export default function App() {
         body: JSON.stringify(nieuw),
       });
       if (!r.ok) throw new Error("opslaan mislukt");
+      setServerVerbonden(true);
     } catch {
+      setServerVerbonden(false);
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(nieuw)); } catch { /* blijft in geheugen */ }
     }
   };
@@ -2264,6 +2309,14 @@ export default function App() {
   return (
     <div className="min-h-screen p-6" style={{ background: PAPIER, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <div className="max-w-4xl mx-auto">
+        {!serverVerbonden && (
+          <div className="mb-4 p-3 rounded-xl text-sm flex items-center gap-2"
+            style={{ background: "#FFE8F3", color: "#8C1D4F", border: "1px solid #FFD0E5" }}>
+            <AlertTriangle size={16} className="shrink-0" />
+            Niet verbonden met de server — wijzigingen blijven nu alleen in deze browser bewaard, niet gedeeld met
+            andere apparaten. Ververs de pagina om het opnieuw te proberen; maak zo nodig een backup (Export).
+          </div>
+        )}
         <header className="flex items-center gap-3 mb-6 flex-wrap">
           {scherm.naam !== "overzicht" && (
             <button onClick={() => setScherm({ naam: terug })}
