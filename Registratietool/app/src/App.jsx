@@ -41,7 +41,7 @@ const LEEG_KLANT = () => ({
 const LEEG_PAND = (klantId) => ({
   id: crypto.randomUUID(), klantId, routeId: "", naam: "", adres: "",
   filiaalnummer: "", grootboek: "",
-  begrootMandagen: 0, begrootEenheid: "dag", voorrijkosten: 0,
+  begrootMandagen: 0, begrootEenheid: "dag", factureerWerkelijkeUren: false, voorrijkosten: 0,
   werkelijkeMandagen: 0, werkelijkeEenheid: "dag", afstandEnkel: 0,
   hoogwerker: false, doorbelast: 0, status: "open",
   startdatum: "", reispatroon: "dagelijks",
@@ -238,7 +238,16 @@ const cijfers = (data, p) => {
   // Offerte is óf in mandagen à dagtarief, óf in uren à dagtarief/8 (prorata) — plus evt. voorrijkosten.
   const begroteEenheidUur = p.begrootEenheid === "uur";
   const begroteMandagen = begroteEenheidUur ? num(p.begrootMandagen) / 8 : num(p.begrootMandagen);
-  const omzetBasis = begroteEenheidUur ? num(p.begrootMandagen) * (tarief / 8) : num(p.begrootMandagen) * tarief;
+  // Mandagen-offertes (0-beurt) zijn aangenomen werk: het dagtarief geldt
+  // ongeacht hoeveel uur het werkelijk kostte, uitloop landt in het resultaat
+  // (zie DESTINATION-registratietool.md). Spoedklussen werken andersom: die
+  // worden per werkelijk gemaakt uur gefactureerd, inclusief reistijd en
+  // pauze — begroteMandagen (in uren) was daar nooit meer dan een eerste
+  // inschatting. `factureerWerkelijkeUren` schakelt dat om, alleen zinvol
+  // i.c.m. uur-eenheid (bij mandagen blijft de offerteprijs sowieso vast).
+  const factureerWerkelijkeUren = begroteEenheidUur && !!p.factureerWerkelijkeUren;
+  const gefactureerdeUren = factureerWerkelijkeUren ? effectieveUren : num(p.begrootMandagen);
+  const omzetBasis = begroteEenheidUur ? gefactureerdeUren * (tarief / 8) : num(p.begrootMandagen) * tarief;
   const voorrijkosten = num(p.voorrijkosten);
   // Twee soorten doorbelaste kosten, allebei omschrijving+bedrag maar met een
   // ander verhaal: geoffreerdeKosten zat al in de offerte (bv. materiaal en
@@ -320,6 +329,7 @@ const cijfers = (data, p) => {
 
   return {
     tarief, uurloon, gewerkteUren, effectieveUren, mandagenWerkelijk: effectieveUren / 8, kmZakelijk, kmPrive,
+    factureerWerkelijkeUren, gefactureerdeUren,
     materiaal, omzetBasis, voorrijkosten, geoffreerdeKostenOmzet, extraWerkzaamhedenOmzet, extraOmzet, omzet,
     reiskosten, arbeid, kosten, marge, resultaat, liters,
     diesel: liters * num(data.instellingen.dieselprijs),
@@ -1019,7 +1029,7 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
     p.extraWerkzaamheden.length > 0 ? "Extra werkzaamheden (buiten de offerte):" : "",
     ...p.extraWerkzaamheden.map((x) => "  - " + (x.omschrijving || "[omschrijving ontbreekt]") + (num(x.bedrag) > 0 ? " (" + eur(x.bedrag) + ")" : "")),
     "",
-    p.begrootMandagen + (begroteEenheidUur ? " uur à " + eur0(g.tarief / 8) : " mandagen à " + eur0(g.tarief))
+    g.gefactureerdeUren + (begroteEenheidUur ? " uur" + (g.factureerWerkelijkeUren ? " (werkelijk gewerkt, incl. reistijd/pauze)" : "") + " à " + eur0(g.tarief / 8) : " mandagen à " + eur0(g.tarief))
       + (num(p.voorrijkosten) > 0 ? " + " + eur(p.voorrijkosten) + " voorrijkosten" : "")
       + (g.extraOmzet > 0 ? " + " + eur(g.extraOmzet) + " kosten en extra werkzaamheden" : "")
       + " = " + eur(g.omzet) + " excl. btw",
@@ -1097,9 +1107,23 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
             onWaarde={(v) => wijzigPand(p.id, { begrootMandagen: v })}
             onEenheid={(v) => wijzigPand(p.id, { begrootEenheid: v })} />
           {p.begrootEenheid === "uur" && (
-            <p className="col-span-2 text-xs -mt-2" style={{ color: "#8A7B98" }}>
-              Verkooptarief bij uren: {eur(g.tarief / 8)} per uur (dagtarief ÷ 8) — dit is het factuurtarief, niet Antons kostprijs.
-            </p>
+            <>
+              <p className="col-span-2 text-xs -mt-2" style={{ color: "#8A7B98" }}>
+                Verkooptarief bij uren: {eur(g.tarief / 8)} per uur (dagtarief ÷ 8) — dit is het factuurtarief, niet Antons kostprijs.
+              </p>
+              <label className="col-span-2 flex items-center gap-2 -mt-1 text-sm" style={{ color: INK }}>
+                <input type="checkbox" checked={!!p.factureerWerkelijkeUren}
+                  onChange={(e) => wijzigPand(p.id, { factureerWerkelijkeUren: e.target.checked })} />
+                Factureer werkelijk gemaakte uren (spoedklus), niet de begrote {p.begrootMandagen || 0} uur hierboven
+              </label>
+              {p.factureerWerkelijkeUren && (
+                <p className="col-span-2 text-xs -mt-2" style={{ color: "#8A7B98" }}>
+                  Opbrengst rekent nu met {g.effectieveUren} werkelijk gewerkte uur
+                  {g.effectieveUren === 1 ? "" : "en"} (incl. reistijd/pauze, uit Uren hieronder) in plaats van de
+                  begrote {p.begrootMandagen || 0}.
+                </p>
+              )}
+            </>
           )}
           <Veld label="Voorrijkosten (afgesproken, excl. btw)" type="number" value={p.voorrijkosten} onChange={(v) => wijzigPand(p.id, { voorrijkosten: v })} />
           <Veld label="Doorbelaste hoogwerkerhuur" type="number" value={p.doorbelast} onChange={(v) => wijzigPand(p.id, { doorbelast: v })} />
@@ -1376,7 +1400,7 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
         <div className="text-sm">
           <div className="flex justify-between py-1.5" style={{ borderBottom: "1px solid #F3EDF7" }}>
             <span style={{ color: "#6B5B7B" }}>
-              Opbrengst · {p.begrootMandagen} {begroteEenheidUur ? "uur à " + eur0(g.tarief / 8) : "mandagen à " + eur0(g.tarief)}
+              Opbrengst · {g.gefactureerdeUren} {begroteEenheidUur ? "uur" + (g.factureerWerkelijkeUren ? " (werkelijk)" : "") + " à " + eur0(g.tarief / 8) : "mandagen à " + eur0(g.tarief)}
             </span>
             <span style={{ color: INK }}>{eur(g.omzetBasis)}</span>
           </div>
@@ -1960,6 +1984,11 @@ function OfferteScherm({ id, data, wijzigOfferte, bewaar, setScherm }) {
         adres: o.voorAdres,
         voorrijkosten: o.voorrijkosten,
         begrootEenheid: "uur",
+        // Spoedklussen zijn geen aangenomen werk: gefactureerd wordt wat
+        // Anton er werkelijk aan uren (incl. reistijd/pauze) aan kwijt is,
+        // niet een vooraf begrote inschatting — zie factureerWerkelijkeUren
+        // in cijfers().
+        factureerWerkelijkeUren: true,
         instructies: [o.aanpak, o.praktisch].filter(Boolean).join("\n\n"),
         voorOmschrijving: o.situatie,
         // Een spoedopdracht heeft geen mandagen/dagtarief — de prijsregels (bv.

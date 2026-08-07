@@ -134,7 +134,7 @@ pand           klantId, routeId, naam, adres, filiaalnummer, grootboek,
                diensten (array: Gevelreiniging, Terreinreiniging (stoep),
                Winkelpui/ramen reinigen, Graffitiverwijdering),
                onderhoudsintervalMaanden,
-               begrootMandagen, begrootEenheid (dag|uur), voorrijkosten,
+               begrootMandagen, begrootEenheid (dag|uur), factureerWerkelijkeUren, voorrijkosten,
                werkelijkeMandagen, werkelijkeEenheid (dag|uur), afstandEnkel,
                hoogwerker, doorbelast, startdatum, reispatroon (dagelijks|overnachten),
                contactpersoonTerPlaatse, telefoonTerPlaatse, instructies,
@@ -176,6 +176,14 @@ afgesproken in plaats van per mandag. `voorrijkosten` is een los, vast bedrag
 bovenop die offerte (bijv. een aparte voorrijkostenafspraak), telt mee in de
 omzet maar niet in het uur-/dagtarief.
 
+`factureerWerkelijkeUren` (alleen relevant bij `begrootEenheid: "uur"`) schakelt
+de omzetberekening om van de begrote uren naar de werkelijk gewerkte uren
+(`effectieveUren`, incl. reistijd/pauze — uit `p.uren`). Staat standaard aan
+voor een pand dat via "Zet om naar opdracht" uit een spoedopdracht-offerte is
+ontstaan; voor elk ander pand met uren-eenheid is het een losse checkbox. Zie
+"Opbrengst rekent met begrote mandagen, niet met werkelijke" in
+DESTINATION-registratietool.md voor waarom dit niet de standaard is.
+
 `werkelijkeMandagen` + `werkelijkeEenheid` op het pand is een snelkoppeling
 naast de urenlijst: vul óf losse uren in (`uren`), óf in één keer het aantal
 werkelijk gewerkte dagen/uren — niet allebei. `cijfers()` gebruikt de urenlijst
@@ -203,9 +211,11 @@ rechtstreeks.
 **`cijfers(data, pand)`** rekent alles door. De volgorde is bewust:
 
 ```
-omzet      = (begrootMandagen × dagtarief, of × dagtarief/8 als uren) + voorrijkosten
+omzet      = (gefactureerdeUren × dagtarief, of × dagtarief/8 als uren) + voorrijkosten
              + extraOmzet (som van geoffreerdeKosten[].bedrag + extraWerkzaamheden[].bedrag —
                resp. kosten die al in de offerte zaten, en werk/kosten daarbuiten)
+             gefactureerdeUren = begrootMandagen, tenzij factureerWerkelijkeUren aanstaat
+             (alleen bij uren-eenheid) — dan effectieveUren (spoedklus, geen aangenomen werk)
 reiskosten = zakelijke km × 0,25
 marge      = omzet − reiskosten − verbruik      ← fiscaal relevant
 arbeid     = effectieve uren × uurloon           ← rekenprijs, geen kostenpost

@@ -109,9 +109,21 @@ Dezelfde data levert vier uitkomsten:
   bij een verzekeraar of de fiscus — die moeten apart geregeld worden, en de
   percentages laten toetsen door boekhouder/verzekeraar voor ze ergens op
   gestuurd wordt.
-- **Opbrengst rekent met begrote mandagen, niet met werkelijke.** Dat is wat er
-  gefactureerd wordt. Uitloop hoort in het resultaat te landen, niet in een
-  opgeblazen omzet.
+- **Opbrengst rekent met begrote mandagen, niet met werkelijke — behalve bij
+  spoedklussen, die werken andersom.** Een 0-beurt-offerte (mandagen à
+  dagtarief) is aangenomen werk: dat is wat er gefactureerd wordt, uitloop
+  hoort in het resultaat te landen, niet in een opgeblazen omzet. Een
+  spoedklus draait precies andersom — die wordt per werkelijk gemaakt uur
+  gefactureerd (incl. reistijd en pauze), niet op een vooraf begrote
+  inschatting. Bleek uit Poeldijk: 9 uur begroot, 7 uur werkelijk (incl.
+  reistijd/pauze), maar de opbrengst rekende met de begrote 9 — waardoor de
+  marge kunstmatig hoger uitviel dan wat er echt gefactureerd zou worden.
+  `factureerWerkelijkeUren` op het pand schakelt dit om (alleen zinvol bij
+  `begrootEenheid: "uur"`); staat standaard aan voor panden die uit een
+  spoedopdracht-offerte zijn omgezet, is een losse checkbox voor de rest.
+  Planning (`begroteMandagen`, voor de verwachte einddatum) blijft wél op de
+  begroting rekenen — die schatting is er juist om vóóraf te plannen, als de
+  werkelijke uren nog niet bekend zijn.
 - **Reispatroon (dagelijks forenzen of in de buurt overnachten) staat per pand,
   niet als één vaste regel.** Verschilt te veel per klus om globaal te zetten —
   dichtbij forenst Anton altijd, ver weg wisselt het. Reistijd komt bij
