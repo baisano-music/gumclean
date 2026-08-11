@@ -44,6 +44,10 @@ const LEEG_PAND = (klantId) => ({
   begrootMandagen: 0, begrootEenheid: "dag", factureerWerkelijkeUren: false, voorrijkosten: 0,
   werkelijkeMandagen: 0, werkelijkeEenheid: "dag", afstandEnkel: 0,
   hoogwerker: false, doorbelast: 0, status: "open",
+  // Wie deze opdracht heeft aangeleverd (leeg = niemand, geen aanbreng-commissie
+  // verschuldigd) — eenmalig 7,5% (Instellingen → Allocatie) over de omzet van dit
+  // pand, zie cijfers().aanbrengBedrag.
+  aanbrenger: "",
   startdatum: "", reispatroon: "dagelijks",
   soortWerk: "Groot onderhoud", werkzaamheden: "", diensten: [],
   onderhoudsintervalMaanden: 0,
@@ -153,7 +157,8 @@ const START = () => {
     instellingen: {
       thuisadres: "Manenburgdreef 93, 2135 GV Hoofddorp", dieselprijs: 1.95, verbruik: 8.5,
       btwPercentage: 21, reserveringAov: 0, reserveringPensioen: 0, reserveringWeer: 0, reserveringInvestering: 0,
-      reserveringBelasting: 0, reissnelheid: 80, werkurenPerDag: 8, onderhoudsPercentage: 60
+      reserveringBelasting: 0, reissnelheid: 80, werkurenPerDag: 8, onderhoudsPercentage: 60,
+      aanbrengPercentage: 7.5, thebascoUurtarief: 75, thebascoUrenPerMaand: 6
     }
   };
 };
@@ -327,6 +332,11 @@ const cijfers = (data, p) => {
   const onderhoudBeurtenPerJaar = num(p.onderhoudsintervalMaanden) > 0 ? 12 / num(p.onderhoudsintervalMaanden) : 0;
   const onderhoudOmzetPerJaar = onderhoudOmzet * onderhoudBeurtenPerJaar;
 
+  // Aanbreng-commissie: eenmalig een percentage van de omzet voor wie deze opdracht
+  // heeft aangeleverd — alleen verschuldigd als er een aanbrenger is ingevuld.
+  const aanbrengPercentage = num(data.instellingen.aanbrengPercentage) || 0;
+  const aanbrengBedrag = p.aanbrenger ? omzet * (aanbrengPercentage / 100) : 0;
+
   return {
     tarief, uurloon, gewerkteUren, effectieveUren, mandagenWerkelijk: effectieveUren / 8, kmZakelijk, kmPrive,
     factureerWerkelijkeUren, gefactureerdeUren,
@@ -341,6 +351,7 @@ const cijfers = (data, p) => {
     reservering, reserveringBtw, reserveringTotaal, nettoBeschikbaar,
     reistijdEnkeleReis, werkdagenNodig, verwachteEinddatum, loopAchter,
     onderhoudsPercentage, onderhoudMandagen, onderhoudOmzet, onderhoudBeurtenPerJaar, onderhoudOmzetPerJaar,
+    aanbrengPercentage, aanbrengBedrag,
   };
 };
 
@@ -1127,6 +1138,15 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
           )}
           <Veld label="Voorrijkosten (afgesproken, excl. btw)" type="number" value={p.voorrijkosten} onChange={(v) => wijzigPand(p.id, { voorrijkosten: v })} />
           <Veld label="Doorbelaste hoogwerkerhuur" type="number" value={p.doorbelast} onChange={(v) => wijzigPand(p.id, { doorbelast: v })} />
+          <div>
+            <Veld label="Aanbrenger" value={p.aanbrenger} placeholder="leeg = geen aanbreng-commissie"
+              onChange={(v) => wijzigPand(p.id, { aanbrenger: v })} />
+            {p.aanbrenger && (
+              <p className="text-xs mt-1" style={{ color: "#8A7B98" }}>
+                {g.aanbrengPercentage}% over {eur(g.omzet)} omzet = {eur(g.aanbrengBedrag)} voor {p.aanbrenger}
+              </p>
+            )}
+          </div>
         </div>
         <label className="flex items-center gap-2 mt-3 text-sm" style={{ color: INK }}>
           <input type="checkbox" checked={p.hoogwerker} onChange={(e) => wijzigPand(p.id, { hoogwerker: e.target.checked })} />
@@ -2201,6 +2221,19 @@ function ExportScherm({ data, bewaar, gekopieerd, kopieer }) {
   const csv = regels.map((r) => r.map((c) => '"' + String(c ?? "").replace(/"/g, '""') + '"').join(";")).join("\n");
   const totKm = data.panden.reduce((s, p) => s + cijfers(data, p).kmZakelijk, 0);
 
+  // Allocatie: wat er naast de reserveringen (hierboven) nog naar elders gaat.
+  // ThéBasco factureert een vast maandbedrag, los van opdrachten; de aanbreng-
+  // commissie is eenmalig per opdracht en alleen verschuldigd waar een aanbrenger
+  // is ingevuld bij het pand.
+  const thebascoMaandbedrag = num(data.instellingen.thebascoUurtarief) * num(data.instellingen.thebascoUrenPerMaand);
+  const thebascoRegel = "Advies, marketing en administratie — " + num(data.instellingen.thebascoUrenPerMaand)
+    + " uur x " + eur(data.instellingen.thebascoUurtarief) + " = " + eur(thebascoMaandbedrag);
+  const aanbrengPanden = data.panden.filter((p) => p.aanbrenger).map((p) => ({ p, kn: klantVan(data, p)?.naam || "", g: cijfers(data, p) }));
+  const aanbrengRegels = [["Aanbrenger", "Klant", "Pand", "Omzet", "Percentage", "Bedrag"]];
+  aanbrengPanden.forEach(({ p, kn, g }) => aanbrengRegels.push([p.aanbrenger, kn, p.naam, g.omzet.toFixed(2), g.aanbrengPercentage, g.aanbrengBedrag.toFixed(2)]));
+  const aanbrengCsv = aanbrengRegels.map((r) => r.map((c) => '"' + String(c ?? "").replace(/"/g, '""') + '"').join(";")).join("\n");
+  const aanbrengTotaal = aanbrengPanden.reduce((s, { g }) => s + g.aanbrengBedrag, 0);
+
   // Backup: de hele state als downloadbaar JSON-bestand. Enige vangnet tegen
   // een verdwenen/losgekoppelde Blob-store (zoals begin augustus 2026) — geen
   // automatische herstelknop, gewoon een bestand dat je zelf ergens bewaart en
@@ -2236,6 +2269,52 @@ function ExportScherm({ data, bewaar, gekopieerd, kopieer }) {
         <p className="text-sm" style={{ color: "#6B5B7B" }}>
           {totKm} zakelijke kilometers · {eur(totKm * KM_TARIEF)} aftrekbaar over alle opdrachten.
         </p>
+      </Kaart>
+      <Kaart>
+        <h3 className="mb-1" style={{ fontFamily: "Fredoka", color: INK }}>Allocatie: ThéBasco & aanbrengers</h3>
+        <p className="text-xs mb-3" style={{ color: "#8A7B98" }}>
+          Wat er naast de reserveringen (hieronder) nog naar elders gaat. ThéBasco factureert een vast bedrag per
+          maand, los van opdrachten. De aanbreng-commissie is eenmalig per opdracht, en alleen verschuldigd als bij
+          het pand (tabblad Opdracht) een aanbrenger is ingevuld.
+        </p>
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          <Veld label="ThéBasco uurtarief" type="number" value={data.instellingen.thebascoUurtarief ?? 75}
+            onChange={(v) => bewaar({ ...data, instellingen: { ...data.instellingen, thebascoUurtarief: v } })} />
+          <Veld label="ThéBasco uren per maand" type="number" value={data.instellingen.thebascoUrenPerMaand ?? 6}
+            onChange={(v) => bewaar({ ...data, instellingen: { ...data.instellingen, thebascoUrenPerMaand: v } })} />
+          <Veld label="Aanbreng-percentage" type="number" value={data.instellingen.aanbrengPercentage ?? 7.5}
+            onChange={(v) => bewaar({ ...data, instellingen: { ...data.instellingen, aanbrengPercentage: v } })} />
+        </div>
+        <div className="flex items-center justify-between p-3 rounded-xl mb-3" style={{ background: PAPIER }}>
+          <span className="text-sm" style={{ color: INK }}>{thebascoRegel}</span>
+          <Knop variant={gekopieerd === "thebasco" ? "geel" : "wit"} klein onClick={() => kopieer(thebascoRegel, "thebasco")}>
+            <span className="flex items-center gap-1">
+              {gekopieerd === "thebasco" ? <Check size={13} /> : <Copy size={13} />}
+              {gekopieerd === "thebasco" ? "Gekopieerd" : "Kopieer"}
+            </span>
+          </Knop>
+        </div>
+        {aanbrengPanden.length === 0 ? (
+          <p className="text-sm" style={{ color: "#8A7B98" }}>Nog geen opdrachten met een aanbrenger ingevuld.</p>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm" style={{ color: INK }}>
+                {eur(aanbrengTotaal)} totaal over {aanbrengPanden.length} opdracht{aanbrengPanden.length === 1 ? "" : "en"}
+              </span>
+              <span className="ml-auto">
+                <Knop variant={gekopieerd === "aanbrengcsv" ? "geel" : "roze"} klein onClick={() => kopieer(aanbrengCsv, "aanbrengcsv")}>
+                  <span className="flex items-center gap-1">
+                    {gekopieerd === "aanbrengcsv" ? <Check size={13} /> : <Copy size={13} />}
+                    {gekopieerd === "aanbrengcsv" ? "Gekopieerd" : "Kopieer als CSV"}
+                  </span>
+                </Knop>
+              </span>
+            </div>
+            <pre className="text-xs whitespace-pre-wrap p-4 rounded-xl max-h-80 overflow-auto"
+              style={{ background: PAPIER, color: INK, fontFamily: "ui-monospace, monospace" }}>{aanbrengCsv}</pre>
+          </>
+        )}
       </Kaart>
       <Kaart>
         <div className="flex items-center gap-2 mb-3">
