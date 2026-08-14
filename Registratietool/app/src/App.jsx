@@ -869,37 +869,41 @@ function OpleverrapportDocument({ p, k }) {
       )}
 
       {(() => {
-        // Koppeling is expliciet (na.voorFotoId), niet op uploadvolgorde —
-        // anders staan foto's willekeurig naast elkaar zodra de aantallen
-        // niet gelijk zijn (bijna altijd het geval: Anton stuurt meestal
-        // meer na-foto's dan Udo voor-foto's stuurde). Groepering is nu
-        // eerst per dienst (foto.dienst, in de volgorde van p.diensten), de
-        // koppeling zelf wordt daarna binnen elke dienst-groep gedaan — een
-        // voor/na-paar hoort dus alleen bij elkaar in het rapport als Bas ze
-        // aan dezelfde dienst heeft getagd. Wat overblijft (ongetagd, of een
-        // dienst die niet meer in p.diensten staat) komt als "Algemeen"
-        // achteraan — elke foto komt zo altijd exact één keer voor, nooit
-        // stilzwijgend kwijt.
-        const matchGroep = (voorSubset, naSubset) => {
-          const gekoppeld = naSubset.filter((n) => n.voorFotoId && voorSubset.some((v) => v.id === n.voorFotoId));
-          const naLos = naSubset.filter((n) => !gekoppeld.includes(n));
-          const gekoppeldeVoorIds = new Set(gekoppeld.map((n) => n.voorFotoId));
-          const voorLos = voorSubset.filter((v) => !gekoppeldeVoorIds.has(v.id));
-          return { gekoppeld, voorLos, naLos };
-        };
+        // Koppeling (na.voorFotoId) is expliciet en bepaalt áltijd of een
+        // voor/na-paar samen in het rapport staat — los van eventuele
+        // dienst-tags. Vroeger werd eerst per dienst gesplitst en pas dáárna
+        // binnen die groep gekoppeld: een paar waarvan de voor- en na-foto
+        // niet exact dezelfde dienst-tag hadden (of maar één van de twee was
+        // getagd) viel dan stilzwijgend uit elkaar in twee ongekoppelde losse
+        // foto's, terwijl de koppeling in "Voor/na koppelen" wél klopte.
+        // Dienst bepaalt nu alleen nog ónder welk subkopje een (intact) paar
+        // of losse foto komt te staan — van een paar de dienst van de
+        // voor-foto, met de na-foto als terugval.
+        const paren = r.naFotos
+          .filter((n) => n.voorFotoId && r.voorFotos.some((v) => v.id === n.voorFotoId))
+          .map((n) => ({ na: n, voor: r.voorFotos.find((v) => v.id === n.voorFotoId) }));
+        const gekoppeldeVoorIds = new Set(paren.map((pr) => pr.voor.id));
+        const gekoppeldeNaIds = new Set(paren.map((pr) => pr.na.id));
+        const voorLos = r.voorFotos.filter((v) => !gekoppeldeVoorIds.has(v.id));
+        const naLos = r.naFotos.filter((n) => !gekoppeldeNaIds.has(n.id));
+        const dienstVanPaar = (pr) => pr.voor.dienst || pr.na.dienst || "";
+
         const getagd = new Set(p.diensten);
         const groepen = p.diensten
-          .map((dienst) => {
-            const voorSubset = r.voorFotos.filter((v) => (v.dienst || "") === dienst);
-            const naSubset = r.naFotos.filter((n) => (n.dienst || "") === dienst);
-            return { titel: dienst, ...matchGroep(voorSubset, naSubset) };
-          })
+          .map((dienst) => ({
+            titel: dienst,
+            gekoppeld: paren.filter((pr) => dienstVanPaar(pr) === dienst),
+            voorLos: voorLos.filter((v) => (v.dienst || "") === dienst),
+            naLos: naLos.filter((n) => (n.dienst || "") === dienst),
+          }))
           .filter((gr) => gr.gekoppeld.length || gr.voorLos.length || gr.naLos.length);
-        const voorAlgemeen = r.voorFotos.filter((v) => !getagd.has(v.dienst || ""));
-        const naAlgemeen = r.naFotos.filter((n) => !getagd.has(n.dienst || ""));
-        if (voorAlgemeen.length || naAlgemeen.length) {
-          groepen.push({ titel: "Algemeen", ...matchGroep(voorAlgemeen, naAlgemeen) });
-        }
+        const algemeen = {
+          titel: "Algemeen",
+          gekoppeld: paren.filter((pr) => !getagd.has(dienstVanPaar(pr))),
+          voorLos: voorLos.filter((v) => !getagd.has(v.dienst || "")),
+          naLos: naLos.filter((n) => !getagd.has(n.dienst || "")),
+        };
+        if (algemeen.gekoppeld.length || algemeen.voorLos.length || algemeen.naLos.length) groepen.push(algemeen);
         if (!groepen.length) return null;
         // Geen subkopjes tonen als er toch maar één groep is en dat de
         // ongetagde restgroep is — dan is er niets te onderscheiden en blijft
@@ -914,15 +918,12 @@ function OpleverrapportDocument({ p, k }) {
                   <h3 className="text-sm font-medium mb-2" style={{ color: "#6B5B7B" }}>{gr.titel}</h3>
                 )}
                 <div className="grid grid-cols-2 gap-4">
-                  {gr.gekoppeld.map((n) => {
-                    const v = r.voorFotos.find((vv) => vv.id === n.voorFotoId);
-                    return (
-                      <React.Fragment key={n.id}>
-                        <FotoCel foto={v} label="voor" />
-                        <FotoCel foto={n} label="na" />
-                      </React.Fragment>
-                    );
-                  })}
+                  {gr.gekoppeld.map((pr) => (
+                    <React.Fragment key={pr.na.id}>
+                      <FotoCel foto={pr.voor} label="voor" />
+                      <FotoCel foto={pr.na} label="na" />
+                    </React.Fragment>
+                  ))}
                   {gr.voorLos.map((v) => <FotoCel key={v.id} foto={v} label="voor" />)}
                   {gr.naLos.map((n) => <FotoCel key={n.id} foto={n} label="na" />)}
                 </div>
