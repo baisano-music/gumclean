@@ -972,22 +972,35 @@ function PandScherm({ id, data, wijzigPand, bewaar, setScherm, gekopieerd, kopie
     return () => { clearTimeout(t); window.removeEventListener("afterprint", reset); };
   }, [printKaart]);
 
+  // Elke foto wordt los weggeschreven zodra hij klaar is (i.p.v. de hele batch
+  // pas aan het eind in één keer) — anders trekt één mislukte foto (netwerk-
+  // hapering, een niet-decodeerbare HEIC) bij meerdere tegelijk geselecteerde
+  // foto's ook de foto's die daarvóór al goed waren verwerkt mee het niets in,
+  // want de hele functie stopt dan vóór de wegschrijf-stap ooit werd bereikt.
   const uploadFotos = async (type, files) => {
     const veld = type === "voor" ? "voorFotos" : "naFotos";
     setUploadBezig(true);
-    const nieuw = [];
+    let huidig = p[veld];
+    let mislukt = 0;
     try {
       for (const file of files) {
-        const blob = await comprimeerAfbeelding(file);
-        const res = await fetch("/api/fotos?pandId=" + p.id + "&type=" + type, {
-          method: "POST", headers: { "Content-Type": "image/jpeg" }, body: blob,
-        });
-        if (res.ok) nieuw.push({ id: crypto.randomUUID(), pathname: (await res.json()).pathname, omschrijving: "", voorFotoId: "", dienst: "" });
+        try {
+          const blob = await comprimeerAfbeelding(file);
+          const res = await fetch("/api/fotos?pandId=" + p.id + "&type=" + type, {
+            method: "POST", headers: { "Content-Type": "image/jpeg" }, body: blob,
+          });
+          if (!res.ok) throw new Error("upload mislukt");
+          const { pathname } = await res.json();
+          huidig = [...huidig, { id: crypto.randomUUID(), pathname, omschrijving: "", voorFotoId: "", dienst: "" }];
+          await wijzigPand(p.id, { [veld]: huidig });
+        } catch {
+          mislukt++;
+        }
       }
     } finally {
       setUploadBezig(false);
     }
-    if (nieuw.length) wijzigPand(p.id, { [veld]: [...p[veld], ...nieuw] });
+    if (mislukt) alert(mislukt + " van de " + files.length + " foto's kon niet worden geüpload — probeer het opnieuw.");
   };
   const verwijderFoto = async (type, foto) => {
     const veld = type === "voor" ? "voorFotos" : "naFotos";
